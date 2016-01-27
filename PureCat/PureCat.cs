@@ -53,8 +53,6 @@ namespace PureCat
             if (_instance._mInitialized)
                 return;
 
-            clientConfig = clientConfig ?? LoadClientConfig(_configPath);
-
             Logger.Info("Initializing Cat .Net Client ...");
 
             DefaultMessageManager manager = new DefaultMessageManager();
