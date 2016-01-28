@@ -7,24 +7,21 @@ using System.Collections.Generic;
 namespace PureCat.Message.Internals
 {
     [Serializable]
-    public class DefaultTransaction : AbstractMessage, ITransaction
+    public class DefaultTaggedTransaction : AbstractMessage, ITaggedTransaction
     {
         private IList<IMessage> _mChildren;
         private long _mDurationInMicro; // must be less than 0
 
-        private IMessageManager _messageManager;
+        private string _rootMessageId;
+        private string _parentMessageId;
+        private string _tag;
 
-        public DefaultTransaction(string type, string name, IMessageManager messageManager = null)
-            : base(type, name, messageManager)
-        {
-            _messageManager = messageManager;
-            _mDurationInMicro = -1;
-            Standalone = true;
-        }
+        public string ParentMessageId { get { return _parentMessageId; } }
 
-        #region ITransaction Members
+        public string RootMessageId { get { return _rootMessageId; } }
 
-        //[JsonConverter(typeof(List<DefaultTransaction>))]
+        public string Tag { get { return _tag; } }
+
         public IList<IMessage> Children
         {
             get { return _mChildren ?? (_mChildren = new List<IMessage>()); }
@@ -74,6 +71,21 @@ namespace PureCat.Message.Internals
 
         public bool Standalone { get; set; }
 
+        public DefaultTaggedTransaction(string type, string name, string tag, IMessageManager messageManager)
+           : base(type, name, messageManager)
+        {
+            _tag = tag;
+            _mDurationInMicro = -1;
+            Standalone = false;
+
+            IMessageTree tree = messageManager.ThreadLocalMessageTree;
+            if (tree != null)
+            {
+                _rootMessageId = tree.RootMessageId;
+                _parentMessageId = tree.ParentMessageId;
+            }
+        }
+
         public ITransaction AddChild(IMessage message)
         {
             if (_mChildren == null)
@@ -85,34 +97,38 @@ namespace PureCat.Message.Internals
             return this;
         }
 
-        public override void Complete()
-        {
-            if (IsCompleted())
-            {
-                // complete() was called more than once
-                IMessage @event = new DefaultEvent("CAT", "BadInstrument") { Status = "TransactionAlreadyCompleted" };
-
-                @event.Complete();
-                AddChild(@event);
-            }
-            else
-            {
-                _mDurationInMicro = MilliSecondTimer.CurrentTimeMicros() - TimestampInMicros;
-
-                SetCompleted(true);
-
-                if (_messageManager != null)
-                {
-                    _messageManager.End(this);
-                }
-            }
-        }
-
         public bool HasChildren()
         {
             return _mChildren != null && _mChildren.Count > 0;
         }
 
-        #endregion
+        public void Bind(string tag, string childMessageId, string title = null)
+        {
+            IEvent @event = new DefaultEvent("RemoteCall", "Tagged");
+
+            if (title == null)
+            {
+                title = $"{Type}:{Name}";
+            }
+
+            @event.AddData(childMessageId, title);
+            @event.Timestamp = Timestamp;
+            @event.Status = "0";
+            @event.Complete();
+
+            AddChild(@event);
+        }
+
+        public void Start()
+        {
+            IMessageTree tree = MessageManager.ThreadLocalMessageTree;
+            if (tree != null && tree.RootMessageId == null)
+            {
+                tree.ParentMessageId = _parentMessageId;
+                tree.RootMessageId = _rootMessageId;
+            }
+        }
+
+
     }
 }

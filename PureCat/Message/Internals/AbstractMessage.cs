@@ -2,6 +2,7 @@
 using System.Text;
 using PureCat.Message.Spi.Codec;
 using PureCat.Util;
+using PureCat.Message.Spi;
 
 namespace PureCat.Message.Internals
 {
@@ -12,13 +13,15 @@ namespace PureCat.Message.Internals
         private readonly string _mType;
         private bool _mCompleted;
         private StringBuilder _mData;
+        private IMessageManager _messageManager;
 
         private string _mStatus = "0";
 
-        protected AbstractMessage(string type, string name)
+        protected AbstractMessage(string type, string name, IMessageManager messageManager = null)
         {
             _mType = type;
             _mName = name;
+            _messageManager = messageManager;
             TimestampInMicros = MilliSecondTimer.CurrentTimeMicros();
         }
 
@@ -28,6 +31,8 @@ namespace PureCat.Message.Internals
         protected long TimestampInMicros { get; private set; }
 
         #region IMessage Members
+
+        public IMessageManager MessageManager { get { return _messageManager; } }
 
         public string Data
         {
@@ -45,7 +50,6 @@ namespace PureCat.Message.Internals
 
             set { _mStatus = value; }
         }
-
         /// <summary>
         ///   其实是Ticks除以10000
         /// </summary>

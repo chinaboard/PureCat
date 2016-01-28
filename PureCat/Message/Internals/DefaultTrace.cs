@@ -1,22 +1,23 @@
-﻿using System;
+﻿using PureCat.Message.Spi;
+using System;
 
 namespace PureCat.Message.Internals
 {
     public class DefaultTrace : AbstractMessage, ITrace
     {
-        private readonly Action<ITrace> _endCallBack;
-        public DefaultTrace(string type, string name, Action<ITrace> endCallBack = null)
-            : base(type, name)
+        private readonly IMessageManager _messageManager;
+        public DefaultTrace(string type, string name, IMessageManager messageManager = null)
+            : base(type, name, messageManager)
         {
-            _endCallBack = endCallBack;
+            _messageManager = messageManager;
         }
         public override void Complete()
         {
             SetCompleted(true);
 
-            if (_endCallBack != null)
+            if (_messageManager != null)
             {
-                _endCallBack(this);
+                _messageManager.Add(this);
             }
         }
     }
