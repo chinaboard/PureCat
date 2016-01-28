@@ -41,12 +41,12 @@ namespace PureCat.Message.Spi.Heartbeat
 
         public void Refresh()
         {
-            Max = (long)GetMemory();
+            Max = (long)GetMemory() / 1024;
             var p = Process.GetCurrentProcess();
-            Total = p.PrivateMemorySize64;
-            HeapUse = GC.GetTotalMemory(false);
-            HeapUnUse = Total - HeapUse;
-            Free = (long)_memory.NextValue();
+            Total = p.PrivateMemorySize64 / 1024;
+            HeapUse = GC.GetTotalMemory(false) / 1024;
+            HeapUnUse = (Total - HeapUse) / 1024;
+            Free = (long)_memory.NextValue() / 1024;
 
             GCInfoList.Clear();
             for (int i = 0; i <= GC.MaxGeneration; i++)

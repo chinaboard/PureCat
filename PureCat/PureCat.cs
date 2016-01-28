@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Xml;
 
 namespace PureCat
@@ -47,6 +48,7 @@ namespace PureCat
             return _instance._mProducer;
         }
 
+
         public static void Initialize(ClientConfig clientConfig)
         {
             Logger.Info("Cat.Version : {0}", System.Reflection.Assembly.GetExecutingAssembly().GetName().Version);
@@ -64,7 +66,6 @@ namespace PureCat
             Logger.Info("Cat .Net Client initialized.");
         }
 
-
         public static bool IsInitialized()
         {
             bool isInitialized = _instance._mInitialized;
@@ -74,6 +75,70 @@ namespace PureCat
             }
             return isInitialized;
         }
+
+
+        public static T DoTransaction<T>(string type, string name, Func<T> func, Func<Exception, T> customCatch = null)
+        {
+            return DoTransaction<Exception, T>(type, name, func, customCatch);
+        }
+
+        public static T DoTransaction<Ex, T>(string type, string name, Func<T> func, Func<Ex, T> customCatch = null) where Ex : Exception
+        {
+            var tran = NewTransaction(type, name);
+            try
+            {
+                return func();
+            }
+            catch (Ex ex)
+            {
+                LogError(ex);
+                tran.SetStatus(ex);
+                if (customCatch != null)
+                {
+                    return customCatch(ex);
+                }
+                else
+                {
+                    throw;
+                }
+            }
+            finally
+            {
+                tran.Complete();
+            }
+        }
+
+        public static void DoTransaction(string type, string name, Action action, Action<Exception> customCatch = null)
+        {
+            DoTransaction<Exception>(type, name, action, customCatch);
+        }
+
+        public static void DoTransaction<Ex>(string type, string name, Action action, Action<Ex> customCatch = null) where Ex : Exception
+        {
+            var tran = NewTransaction(type, name);
+            try
+            {
+                action();
+            }
+            catch (Ex ex)
+            {
+                LogError(ex);
+                tran.SetStatus(ex);
+                if (customCatch != null)
+                {
+                    customCatch(ex);
+                }
+                else
+                {
+                    throw;
+                }
+            }
+            finally
+            {
+                tran.Complete();
+            }
+        }
+
 
         public static ITransaction NewTransaction(string type, string name)
         {
@@ -111,6 +176,7 @@ namespace PureCat
         {
             return GetProducer().CreateMessageId();
         }
+
 
         public static CatContext LogRemoteCallClient(string contextName)
         {
@@ -184,7 +250,6 @@ namespace PureCat
             GetProducer().LogError(ex);
         }
 
-
         public static void LogMetricForCount(string name, int count = 1)
         {
             LogMetricInternal(name, "C", count.ToString());
@@ -204,6 +269,7 @@ namespace PureCat
         {
             LogMetricInternal(name, "S,C", string.Format("{0},{1:F}", count, value));
         }
+
         private static void LogMetricInternal(string name, string status, string keyValuePairs = null)
         {
             GetProducer().LogMetric(name, status, keyValuePairs);

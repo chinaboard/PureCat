@@ -63,9 +63,9 @@ namespace PureCat.Message.Spi.Heartbeat
                     DiskInfoList.Add(new DiskInfo()
                     {
                         Id = drive.Name,
-                        Free = drive.AvailableFreeSpace,
-                        Total = drive.TotalSize,
-                        Use = drive.TotalSize - drive.AvailableFreeSpace
+                        Free = drive.AvailableFreeSpace / 1024,
+                        Total = drive.TotalSize / 1024,
+                        Use = (drive.TotalSize - drive.AvailableFreeSpace) / 1024
                     });
                 }
             });

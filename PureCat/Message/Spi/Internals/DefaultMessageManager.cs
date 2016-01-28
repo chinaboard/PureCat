@@ -78,7 +78,6 @@ namespace PureCat.Message.Spi.Internals
             _mFactory.Initialize(_mClientConfig.Domain.Id);
 
             // start status update task
-            ThreadPool.QueueUserWorkItem(_mStatusUpdateTask.SubmitVersion);
             ThreadPool.QueueUserWorkItem(_mStatusUpdateTask.Run);
             Logger.Info("Thread(StatusUpdateTask) started.");
         }
@@ -176,11 +175,6 @@ namespace PureCat.Message.Spi.Internals
                 {
                     return ctx;
                 }
-                if (_mClientConfig.DevMode)
-                {
-                    throw new Exception(
-                        "Cat has not been initialized successfully, please call Cal.setup(...) first for each thread.");
-                }
             }
 
             return null;
@@ -190,11 +184,6 @@ namespace PureCat.Message.Spi.Internals
         {
             return _mFactory.GetNextId();
         }
-
-        //internal bool ShouldThrottle(IMessageTree tree)
-        //{
-        //    return false;
-        //}
 
         #region Nested type: Context
 

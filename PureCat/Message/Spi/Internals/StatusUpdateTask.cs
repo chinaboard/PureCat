@@ -11,15 +11,6 @@ namespace PureCat.Message.Spi.Internals
     {
         internal readonly NodeStatusInfo m_nodeInfo = null;
 
-        public void SubmitVersion(object o)
-        {
-            while (true)
-            {
-                PureCat.GetProducer().LogEvent("Cat", "Version", "0", System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString());
-                Thread.Sleep(TimeSpan.FromMinutes(5));
-            }
-        }
-
         public StatusUpdateTask(IMessageStatistics mStatistics)
         {
             try
@@ -48,9 +39,10 @@ namespace PureCat.Message.Spi.Internals
 
                 Logger.Info(xml);
 
-                System.IO.File.WriteAllText(@"z:\xxx.txt", xml);
                 PureCat.GetProducer().LogHeartbeat("Heartbeat", AppEnv.IP, "0", xml);
                 t.Complete();
+
+                PureCat.GetProducer().LogEvent("System", "Version", "0", System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString());
 
                 Thread.Sleep(60000);
             }
