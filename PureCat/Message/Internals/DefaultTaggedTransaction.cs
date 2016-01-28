@@ -93,7 +93,15 @@ namespace PureCat.Message.Internals
                 _mChildren = new List<IMessage>();
             }
 
-            _mChildren.Add(message);
+            if (message != null)
+            {
+                _mChildren.Add(message);
+            }
+            else
+            {
+                PureCat.LogError(new Exception("null child message"));
+            }
+
             return this;
         }
 
@@ -106,12 +114,7 @@ namespace PureCat.Message.Internals
         {
             IEvent @event = new DefaultEvent("RemoteCall", "Tagged");
 
-            if (title == null)
-            {
-                title = $"{Type}:{Name}";
-            }
-
-            @event.AddData(childMessageId, title);
+            @event.AddData(childMessageId, title ?? $"{Type}:{Name}");
             @event.Timestamp = Timestamp;
             @event.Status = "0";
             @event.Complete();

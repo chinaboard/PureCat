@@ -81,7 +81,14 @@ namespace PureCat.Message.Internals
                 _mChildren = new List<IMessage>();
             }
 
-            _mChildren.Add(message);
+            if (message != null)
+            {
+                _mChildren.Add(message);
+            }
+            else
+            {
+                PureCat.LogError(new Exception("null child message"));
+            }
             return this;
         }
 
