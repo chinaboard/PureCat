@@ -67,13 +67,20 @@ namespace PureCat.Message.Spi
         ///  Be triggered when a new transaction starts, whatever it's the root transaction or nested transaction.
         ///</summary>
         ///<param name="transaction"> </param>
-        void Start(ITransaction transaction);
+        void Start(ITransaction transaction, bool forked);
 
         ///<summary>
         ///  Be triggered when a transaction ends, whatever it's the root transaction or nested transaction. However, if it's the root transaction then it will be flushed to back-end CAT server asynchronously.
         ///</summary>
         ///<param name="transaction"> </param>
         void End(ITransaction transaction);
+
+        /// <summary>
+        /// Binds the current message tree to the transaction tagged with <code>tag</code>.
+        /// </summary>
+        /// <param name="tag">tag name of the tagged transaction</param>
+        /// <param name="title">title shown in the logview</param>
+        void Bind(string tag, string title);
 
         MessageIdFactory GetMessageIdFactory();
     }

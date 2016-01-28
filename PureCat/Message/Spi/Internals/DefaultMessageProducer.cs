@@ -54,15 +54,15 @@ namespace PureCat.Message.Spi.Internals
 
         public virtual void LogEvent(string type, string name, string status, string nameValuePairs)
         {
-            IEvent evt0 = NewEvent(type, name);
+            IEvent @event = NewEvent(type, name);
 
             if (!string.IsNullOrEmpty(nameValuePairs))
             {
-                evt0.AddData(nameValuePairs);
+                @event.AddData(nameValuePairs);
             }
 
-            evt0.Status = status;
-            evt0.Complete();
+            @event.Status = status;
+            @event.Complete();
         }
 
         public virtual void LogHeartbeat(string type, string name, string status, string nameValuePairs)
@@ -100,12 +100,12 @@ namespace PureCat.Message.Spi.Internals
 
             if (_mManager.CatEnabled)
             {
-                IEvent evt0 = new DefaultEvent(type, name);
+                IEvent @event = new DefaultEvent(type, name);
 
-                _mManager.Add(evt0);
-                return evt0;
+                _mManager.Add(@event);
+                return @event;
             }
-            return new NullEvent();
+            return NullMessage.EVENT;
         }
 
         public virtual IHeartbeat NewHeartbeat(string type, string name)
@@ -122,7 +122,7 @@ namespace PureCat.Message.Spi.Internals
                 _mManager.Add(heartbeat);
                 return heartbeat;
             }
-            return new NullHeartbeat();
+            return NullMessage.HEARTBEAT;
         }
 
         public virtual ITransaction NewTransaction(string type, string name)
@@ -135,12 +135,31 @@ namespace PureCat.Message.Spi.Internals
 
             if (_mManager.CatEnabled)
             {
-                ITransaction transaction = new DefaultTransaction(type, name, _mManager.End);
+                ITransaction transaction = new DefaultTransaction(type, name, _mManager);
 
-                _mManager.Start(transaction);
+                _mManager.Start(transaction, false);
                 return transaction;
             }
-            return new NullTransaction();
+            return NullMessage.TRANSACTION;
+        }
+
+        public virtual ITransaction NewTransaction(ITransaction parent, string type, string name)
+        {
+            // this enable CAT client logging cat message without explicit setup
+            if (!_mManager.HasContext())
+            {
+                _mManager.Setup();
+            }
+
+            if (_mManager.CatEnabled && parent != null)
+            {
+                ITransaction transaction = new DefaultTransaction(type, name, _mManager);
+
+                parent.AddChild(transaction);
+                transaction.Standalone = false;
+                return transaction;
+            }
+            return NullMessage.TRANSACTION;
         }
 
         public virtual IMetric NewMetric(string type, string name)
@@ -158,7 +177,7 @@ namespace PureCat.Message.Spi.Internals
                 _mManager.Add(metric);
                 return metric;
             }
-            return new NullMetric();
+            return NullMessage.METRIC;
         }
 
         public virtual ITrace NewTrace(string type, string name)
@@ -176,7 +195,67 @@ namespace PureCat.Message.Spi.Internals
                 _mManager.Add(trace);
                 return trace;
             }
-            return new NullTrace();
+            return NullMessage.TRACE;
+        }
+
+        public IForkedTransaction NewForkedTransaction(string type, string name)
+        {
+            // this enable CAT client logging cat message without explicit setup
+            if (!_mManager.HasContext())
+            {
+                _mManager.Setup();
+            }
+
+            if (_mManager.CatEnabled)
+            {
+                IMessageTree tree = _mManager.ThreadLocalMessageTree;
+
+                if (tree.MessageId == null)
+                {
+                    tree.MessageId = CreateMessageId();
+                }
+
+                IForkedTransaction transaction = new DefaultForkedTransaction(type, name, _mManager);
+
+                if (_mManager is DefaultMessageManager)
+                {
+                    ((DefaultMessageManager)_mManager).LinkAsRunAway(transaction);
+                }
+                _mManager.Start(transaction, true);
+                return transaction;
+            }
+            else
+            {
+                return NullMessage.FORKEDTRANSACTION;
+            }
+        }
+
+        public ITaggedTransaction NewTaggedTransaction(string type, string name, string tag)
+        {
+            // this enable CAT client logging cat message without explicit setup
+            if (!_mManager.HasContext())
+            {
+                _mManager.Setup();
+            }
+
+            if (_mManager.CatEnabled)
+            {
+                IMessageTree tree = _mManager.ThreadLocalMessageTree;
+
+                if (tree.MessageId == null)
+                {
+                    tree.MessageId = CreateMessageId();
+                }
+
+                ITaggedTransaction transaction = new DefaultTaggedTransaction(type, name, tag, _mManager);
+
+                _mManager.Start(transaction, true);
+                return transaction;
+            }
+            else
+            {
+                return NullMessage.TAGGEDTRANSACTION;
+            }
         }
 
         #endregion

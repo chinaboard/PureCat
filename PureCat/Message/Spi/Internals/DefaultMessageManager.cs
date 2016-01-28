@@ -6,6 +6,8 @@ using PureCat.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Collections.Concurrent;
+using System.Linq;
 
 namespace PureCat.Message.Spi.Internals
 {
@@ -21,6 +23,7 @@ namespace PureCat.Message.Spi.Internals
         private MessageIdFactory _mFactory;
 
         private bool _mFirstMessage = true;
+
         private string _mHostName;
 
         private IMessageSender _mSender;
@@ -28,6 +31,8 @@ namespace PureCat.Message.Spi.Internals
         private IMessageStatistics _mStatistics;
 
         private StatusUpdateTask _mStatusUpdateTask;
+
+        private ConcurrentDictionary<string, ITaggedTransaction> _taggedTransactions;
 
         #region IMessageManager Members
 
@@ -81,12 +86,13 @@ namespace PureCat.Message.Spi.Internals
             _mClientConfig = clientConfig ?? new ClientConfig();
 
             _mHostName = NetworkInterfaceManager.GetLocalHostName();
-
             _mStatistics = new DefaultMessageStatistics();
             _mSender = new TcpMessageSender(_mClientConfig, _mStatistics);
             _mSender.Initialize();
             _mFactory = new MessageIdFactory();
             _mStatusUpdateTask = new StatusUpdateTask(_mStatistics);
+
+            _taggedTransactions = new ConcurrentDictionary<string, ITaggedTransaction>();
 
             // initialize domain and ip address
             _mFactory.Initialize(_mClientConfig.Domain.Id);
@@ -114,9 +120,26 @@ namespace PureCat.Message.Spi.Internals
             {
                 ctx.Add(this, message);
             }
-            else
+        }
+
+        public void Bind(string tag, string title)
+        {
+            ITaggedTransaction t = null;
+
+            if (_taggedTransactions.TryGetValue(tag, out t))
             {
-                Logger.Warn("Context没取到");
+                IMessageTree tree = ThreadLocalMessageTree;
+
+                if (tree != null)
+                {
+                    if (tree.MessageId == null)
+                    {
+                        tree.MessageId = NextMessageId();
+                    }
+
+                    t.Start();
+                    t.Bind(tag, tree.MessageId, title);
+                }
             }
         }
 
@@ -128,21 +151,25 @@ namespace PureCat.Message.Spi.Internals
             _mContext.Value = ctx;
         }
 
-        public virtual void Start(ITransaction transaction)
+        public virtual void Start(ITransaction transaction, bool forked)
         {
             Context ctx = GetContext();
 
             if (ctx != null)
             {
-                ctx.Start(this, transaction);
+                ctx.Start(this, transaction, forked);
+
+                if (transaction is DefaultTaggedTransaction)
+                {
+                    ITaggedTransaction tt = transaction as DefaultTaggedTransaction;
+                    _taggedTransactions[tt.Tag] = tt;
+                }
             }
             else if (_mFirstMessage)
             {
                 _mFirstMessage = false;
-                Logger.Info("CAT client is not enabled because it's not initialized yet");
+                Logger.Warn("CAT client is not enabled because it's not initialized yet");
             }
-            else
-                Logger.Warn("Context没取到");
         }
 
         public virtual void End(ITransaction transaction)
@@ -194,6 +221,15 @@ namespace PureCat.Message.Spi.Internals
             }
 
             return null;
+        }
+
+        public void LinkAsRunAway(IForkedTransaction transaction)
+        {
+            Context ctx = GetContext();
+            if (ctx != null)
+            {
+                ctx.LinkAsRunAway(this, transaction);
+            }
         }
 
         public string NextMessageId()
@@ -264,20 +300,28 @@ namespace PureCat.Message.Spi.Internals
                     if (_mStack.Count != 0)
                     {
                         ITransaction current = _mStack.Pop();
-                        while (transaction != current && _mStack.Count != 0)
+
+                        if (transaction == current)
                         {
-                            current = _mStack.Pop();
+                            ValidateTransaction(manager, _mStack.Count == 0 ? null : _mStack.Peek(), current);
                         }
-                        if (transaction != current)
-                            throw new Exception("没找到对应的Transaction:" + current.Name);
+                        else
+                        {
+                            while (transaction != current && _mStack.Count != 0)
+                            {
+                                current = _mStack.Pop();
+                            }
+                        }
+
 
                         if (_mStack.Count == 0)
                         {
-                            ValidateTransaction(current);
-
                             IMessageTree tree = _mTree.Copy();
                             _mTree.MessageId = null;
                             _mTree.Message = null;
+
+                            //TODO
+
                             manager.Flush(tree);
                             return true;
                         }
@@ -310,13 +354,15 @@ namespace PureCat.Message.Spi.Internals
             /// </summary>
             /// <param name="manager"> </param>
             /// <param name="transaction"> </param>
-            public void Start(DefaultMessageManager manager, ITransaction transaction)
+            public void Start(DefaultMessageManager manager, ITransaction transaction, bool forked)
             {
                 if (_mStack.Count != 0)
                 {
-                    transaction.Standalone = false;
-                    ITransaction entry = _mStack.Peek();
-                    entry.AddChild(transaction);
+                    if (!(transaction is DefaultForkedTransaction))
+                    {
+                        ITransaction parent = _mStack.Peek();
+                        AddTransactionChild(manager, transaction, parent);
+                    }
                 }
                 else
                 {
@@ -324,36 +370,187 @@ namespace PureCat.Message.Spi.Internals
                     _mTree.Message = transaction;
                 }
 
-                _mStack.Push(transaction);
+                if (!forked)
+                {
+                    _mStack.Push(transaction);
+                }
             }
 
-            //验证Transaction
-            internal void ValidateTransaction(ITransaction transaction)
+            internal void LinkAsRunAway(DefaultMessageManager manager, IForkedTransaction transaction)
             {
-                IList<IMessage> children = transaction.Children;
-                int len = children.Count;
-                for (int i = 0; i < len; i++)
+                IEvent @event = new DefaultEvent("RemoteCall", "RunAway");
+
+                @event.AddData(transaction.ForkedMessageId, $"{transaction.Type}:{transaction.Name}");
+                @event.Timestamp = transaction.Timestamp;
+                @event.Status = "0";
+                @event.Complete();
+
+                transaction.Standalone = true;
+
+                manager.Add(@event);
+            }
+            private void MarkAsRunAway(ITransaction parent, DefaultTaggedTransaction transaction)
+            {
+                if (!transaction.HasChildren())
                 {
-                    IMessage message = children[i];
-                    var transaction1 = message as ITransaction;
-                    if (transaction1 != null)
+                    transaction.AddData("RunAway");
+                }
+
+                transaction.Status = "0";
+                transaction.Standalone = true;
+                transaction.Complete();
+            }
+
+            private void MarkAsNotCompleted(DefaultTransaction transaction)
+            {
+                IEvent notCompleteEvent = new DefaultEvent("CAT", "BadInstrument") { Status = "TransactionNotCompleted" };
+                notCompleteEvent.Complete();
+                transaction.AddChild(notCompleteEvent);
+                transaction.Complete();
+            }
+
+
+            //验证Transaction
+            internal void ValidateTransaction(DefaultMessageManager manager, ITransaction parent, ITransaction transaction)
+            {
+                if (transaction.Standalone)
+                {
+                    IList<IMessage> children = transaction.Children;
+                    int len = children.Count;
+                    for (int i = 0; i < len; i++)
                     {
-                        ValidateTransaction(transaction1);
+                        IMessage message = children[i];
+
+                        if (message is ITransaction)
+                        {
+                            ValidateTransaction(manager, transaction, message as ITransaction);
+                        }
+                    }
+
+                    if (!transaction.IsCompleted() && transaction is DefaultTransaction)
+                    {
+                        MarkAsNotCompleted(transaction as DefaultTransaction);
+                    }
+                    else if (!transaction.IsCompleted())
+                    {
+                        if (transaction is DefaultForkedTransaction)
+                        {
+                            LinkAsRunAway(manager, transaction as DefaultForkedTransaction);
+                        }
+                        else if (transaction is DefaultTaggedTransaction)
+                        {
+                            MarkAsRunAway(parent, transaction as DefaultTaggedTransaction);
+                        }
+
+                    }
+                }
+            }
+
+            private void AddTransactionChild(DefaultMessageManager manager, IMessage message, ITransaction transaction)
+            {
+                long treePeriod = TrimToHour(_mTree.Message.Timestamp);
+                long messagePeriod = TrimToHour(message.Timestamp - 10 * 1000L); // 10 seconds extra time allowed
+
+                if (treePeriod < messagePeriod)
+                {
+                    TruncateAndFlush(manager, message.Timestamp);
+                }
+
+                transaction.AddChild(message);
+            }
+
+            private void TruncateAndFlush(DefaultMessageManager manager, long timestamp)
+            {
+                IMessageTree tree = _mTree;
+                Stack<ITransaction> stack = _mStack;
+                IMessage message = tree.Message;
+
+                if (message is DefaultTransaction)
+                {
+                    if (tree.MessageId == null)
+                    {
+                        tree.MessageId = manager.NextMessageId();
+                    }
+
+                    string rootId = tree.RootMessageId;
+                    string childId = manager.NextMessageId();
+
+                    DefaultTransaction source = message as DefaultTransaction;
+                    DefaultTransaction target = new DefaultTransaction(source.Type, source.Name, manager);
+                    target.Timestamp = source.Timestamp;
+                    target.DurationInMicros = source.DurationInMicros;
+                    target.AddData(source.Data);
+                    target.Status = "0";
+
+                    MigrateMessage(manager, stack, source, target, 1);
+
+                    var list = stack.ToList();
+
+                    for (int i = list.Count - 1; i >= 0; i--)
+                    {
+                        DefaultTransaction tran = list[i] as DefaultTransaction;
+                        tran.Timestamp = timestamp;
+                        tran.DurationInMicros = MilliSecondTimer.CurrentTimeMicros();
+                    }
+
+                    IEvent next = new DefaultEvent("RemoteCall", "Next");
+                    next.AddData(childId);
+                    next.Status = "0";
+                    target.AddChild(next);
+
+                    IMessageTree t = tree.Copy();
+
+                    t.Message = target;
+
+                    _mTree.MessageId = childId;
+                    _mTree.ParentMessageId = tree.MessageId;
+                    _mTree.RootMessageId = rootId ?? tree.MessageId;
+
+                    manager.Flush(t);
+                }
+            }
+
+            private void MigrateMessage(DefaultMessageManager manager, Stack<ITransaction> stack, ITransaction source, ITransaction target, int level)
+            {
+                ITransaction current = level < stack.Count ? stack.ToList()[level] : null;
+                bool shouldKeep = false;
+
+                foreach (IMessage child in source.Children)
+                {
+                    if (child != current)
+                    {
+                        target.AddChild(child);
+                    }
+                    else
+                    {
+                        DefaultTransaction cloned = new DefaultTransaction(current.Type, current.Name, manager);
+
+                        cloned.Timestamp = current.Timestamp;
+                        cloned.DurationInMicros = current.DurationInMicros;
+                        cloned.AddData(current.Data);
+                        cloned.Status = "0";
+
+                        target.AddChild(cloned);
+                        MigrateMessage(manager, stack, current, cloned, level + 1);
+
+                        shouldKeep = true;
                     }
                 }
 
-                if (!transaction.IsCompleted())
+                source.Children.Clear();
+                if (shouldKeep)
                 {
-                    // missing transaction end, log a BadInstrument event so that
-                    // developer can fix the code
-                    IMessage notCompleteEvent = new DefaultEvent("CAT", "BadInstrument") { Status = "TransactionNotCompleted" };
-                    notCompleteEvent.Complete();
-                    transaction.AddChild(notCompleteEvent);
-                    transaction.Complete();
+                    source.AddChild(current);
                 }
+            }
+
+            private long TrimToHour(long timestamp)
+            {
+                return timestamp - timestamp % (3600 * 1000L);
             }
         }
 
-        #endregion
+
     }
+    #endregion
 }
