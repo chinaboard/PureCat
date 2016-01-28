@@ -42,7 +42,14 @@ namespace PureCat.Message.Spi.Internals
             {
                 Context ctx = GetContext();
 
-                return ctx != null ? ctx.PeekTransaction() : null;
+                if (ctx == null)
+                {
+                    Setup();
+                }
+
+                ctx = _mContext.Value;
+
+                return ctx.PeekTransaction();
             }
         }
 
@@ -52,7 +59,14 @@ namespace PureCat.Message.Spi.Internals
             {
                 Context ctx = _mContext.Value;
 
-                return ctx != null ? ctx.Tree : null;
+                if (ctx == null)
+                {
+                    Setup();
+                }
+
+                ctx = _mContext.Value;
+
+                return ctx.Tree;
             }
         }
 
@@ -101,7 +115,9 @@ namespace PureCat.Message.Spi.Internals
                 ctx.Add(this, message);
             }
             else
+            {
                 Logger.Warn("Context没取到");
+            }
         }
 
         public virtual void Setup()
