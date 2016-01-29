@@ -376,11 +376,11 @@ namespace PureCat.Message.Spi.Internals
 
             internal void LinkAsRunAway(DefaultMessageManager manager, IForkedTransaction transaction)
             {
-                IEvent @event = new DefaultEvent("RemoteCall", "RunAway");
+                IEvent @event = new DefaultEvent(PureCatConstants.TYPE_REMOTE_CALL, "RunAway");
 
                 @event.AddData(transaction.ForkedMessageId, $"{transaction.Type}:{transaction.Name}");
                 @event.Timestamp = transaction.Timestamp;
-                @event.Status = "0";
+                @event.Status = PureCatConstants.SUCCESS;
                 @event.Complete();
 
                 transaction.Standalone = true;
@@ -394,7 +394,7 @@ namespace PureCat.Message.Spi.Internals
                     transaction.AddData("RunAway");
                 }
 
-                transaction.Status = "0";
+                transaction.Status = PureCatConstants.SUCCESS;
                 transaction.Standalone = true;
                 transaction.Complete();
             }
@@ -478,7 +478,7 @@ namespace PureCat.Message.Spi.Internals
                     target.Timestamp = source.Timestamp;
                     target.DurationInMicros = source.DurationInMicros;
                     target.AddData(source.Data);
-                    target.Status = "0";
+                    target.Status = PureCatConstants.SUCCESS;
 
                     MigrateMessage(manager, stack, source, target, 1);
 
@@ -491,9 +491,9 @@ namespace PureCat.Message.Spi.Internals
                         tran.DurationInMicros = -1;
                     }
 
-                    IEvent next = new DefaultEvent("RemoteCall", "Next");
+                    IEvent next = new DefaultEvent(PureCatConstants.TYPE_REMOTE_CALL, "Next");
                     next.AddData(childId);
-                    next.Status = "0";
+                    next.Status = PureCatConstants.SUCCESS;
                     target.AddChild(next);
 
                     IMessageTree t = tree.Copy();
@@ -526,7 +526,7 @@ namespace PureCat.Message.Spi.Internals
                         cloned.Timestamp = current.Timestamp;
                         cloned.DurationInMicros = current.DurationInMicros;
                         cloned.AddData(current.Data);
-                        cloned.Status = "0";
+                        cloned.Status = PureCatConstants.SUCCESS;
 
                         target.AddChild(cloned);
                         MigrateMessage(manager, stack, current, cloned, level + 1);

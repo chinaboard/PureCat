@@ -112,11 +112,11 @@ namespace PureCat.Message.Internals
 
         public void Bind(string tag, string childMessageId, string title = null)
         {
-            IEvent @event = new DefaultEvent("RemoteCall", "Tagged");
+            IEvent @event = new DefaultEvent(PureCatConstants.TYPE_REMOTE_CALL, "Tagged");
 
             @event.AddData(childMessageId, title ?? $"{Type}:{Name}");
             @event.Timestamp = Timestamp;
-            @event.Status = "0";
+            @event.Status = PureCatConstants.SUCCESS;
             @event.Complete();
 
             AddChild(@event);

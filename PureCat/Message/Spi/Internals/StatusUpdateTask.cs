@@ -39,10 +39,10 @@ namespace PureCat.Message.Spi.Internals
 
                 //Logger.Info(xml);
 
-                PureCat.GetProducer().LogHeartbeat("Heartbeat", AppEnv.IP, "0", xml);
+                PureCat.GetProducer().LogHeartbeat("Heartbeat", AppEnv.IP, PureCatConstants.SUCCESS, xml);
                 t.Complete();
 
-                PureCat.GetProducer().LogEvent("System", "Version", "0", System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString());
+                PureCat.GetProducer().LogEvent("System", "Version", PureCatConstants.SUCCESS, System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString());
 
                 Thread.Sleep(60000);
             }

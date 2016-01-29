@@ -140,6 +140,16 @@ namespace PureCat
         }
 
 
+        public static ITaggedTransaction NewTaggedTransaction(string type, string name, string tag)
+        {
+            return GetProducer().NewTaggedTransaction(type, name, tag);
+        }
+
+        public static IForkedTransaction NewForkedTransaction(string type, string name)
+        {
+            return GetProducer().NewForkedTransaction(type, name);
+        }
+
         public static ITransaction NewTransaction(string type, string name)
         {
             return GetProducer().NewTransaction(type, name);
@@ -192,7 +202,7 @@ namespace PureCat
             var messageId = tree.MessageId;
 
             var childId = CreateMessageId();
-            LogEvent("RemoteCall", ctx.ContextName, "0", childId);
+            LogEvent(PureCatConstants.TYPE_REMOTE_CALL, ctx.ContextName, PureCatConstants.SUCCESS, childId);
 
             var rootId = tree.RootMessageId;
 
@@ -235,12 +245,12 @@ namespace PureCat
         }
 
 
-        public static void LogEvent(string type, string name, string status = "0", string nameValuePairs = null)
+        public static void LogEvent(string type, string name, string status = PureCatConstants.SUCCESS, string nameValuePairs = null)
         {
             GetProducer().LogEvent(type, name, status, nameValuePairs);
         }
 
-        public static void LogHeartbeat(string type, string name, string status = "0", string nameValuePairs = null)
+        public static void LogHeartbeat(string type, string name, string status = PureCatConstants.SUCCESS, string nameValuePairs = null)
         {
             GetProducer().LogHeartbeat(type, name, status, nameValuePairs);
         }
@@ -260,7 +270,7 @@ namespace PureCat
             LogMetricInternal(name, "T", string.Format("{0:F}", value));
         }
 
-        public static void logMetricForSum(string name, double value)
+        public static void LogMetricForSum(string name, double value)
         {
             LogMetricInternal(name, "S", string.Format("{0:F}", value));
         }
