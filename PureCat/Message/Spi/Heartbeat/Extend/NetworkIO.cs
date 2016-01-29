@@ -7,31 +7,33 @@ namespace PureCat.Message.Spi.Heartbeat.Extend
 {
     public class NetworkIO : HeartbeatExtention
     {
-        protected Dictionary<string, double> m_dict = null;
+        protected Dictionary<string, double> _dict = null;
 
-        protected List<NetworkAdapter> adappterList = new List<NetworkAdapter>();
+        protected List<NetworkAdapter> _adappterList = new List<NetworkAdapter>();
 
         public NetworkIO()
         {
-            m_dict = new Dictionary<string, double>();
-            var interfaces = GetNetworkInterfaces();
-
+            _dict = new Dictionary<string, double>();
             PerformanceCounterCategory category = new PerformanceCounterCategory("Network Interface");
 
-            foreach (string name in category.GetInstanceNames())
+            var interfaces = GetNetworkInterfaces();
+            var categoryList = category.GetInstanceNames();
+
+            foreach (string name in categoryList)
             {
-                if (!interfaces.Select(t => t.Description).Contains(name) || name.ToLower().Contains("vmware") || name.ToLower().Contains("loopback"))
+                var nicName = name.Replace('[', '(').Replace(']', ')');
+                if (!interfaces.Select(t => t.Description).Contains(nicName) || nicName.ToLower().Contains("loopback"))
                     continue;
-                NetworkAdapter adapter = new NetworkAdapter(interfaces.First(t => t.Description.Contains(name)).Name);
+                NetworkAdapter adapter = new NetworkAdapter(interfaces.First(t => t.Description.Contains(nicName)).Name);
                 adapter.NetworkBytesReceived = new PerformanceCounter("Network Interface", "Bytes Received/sec", name);
                 adapter.NetworkBytesSend = new PerformanceCounter("Network Interface", "Bytes Sent/sec", name);
-                adappterList.Add(adapter);			// Add it to ArrayList adapter
+                _adappterList.Add(adapter);			// Add it to ArrayList adapter
             }
         }
 
         public override Dictionary<string, double> Dict
         {
-            get { return m_dict; }
+            get { return _dict; }
         }
 
         public override string Id
@@ -41,20 +43,21 @@ namespace PureCat.Message.Spi.Heartbeat.Extend
 
         public override void Refresh()
         {
-            foreach (var item in adappterList)
+            _adappterList.ForEach(item =>
             {
-                m_dict[item.Name + "_Send"] = item.NetworkBytesSend.NextValue();
-                m_dict[item.Name + "_Received"] = item.NetworkBytesReceived.NextValue();
-            }
+                _dict[item.Name + "_Send"] = item.NetworkBytesSend.NextValue();
+                _dict[item.Name + "_Received"] = item.NetworkBytesReceived.NextValue();
+            });
         }
 
         public static List<NetworkInterface> GetNetworkInterfaces()
         {
             List<NetworkInterface> list = new List<NetworkInterface>();
             List<NetworkInterface> Interfaces = new List<NetworkInterface>();
+
             foreach (var nic in NetworkInterface.GetAllNetworkInterfaces())
             {
-                if (nic.OperationalStatus == OperationalStatus.Up)
+                if (nic.NetworkInterfaceType == NetworkInterfaceType.Ethernet && nic.OperationalStatus == OperationalStatus.Up)
                 {
                     Interfaces.Add(nic);
                 }

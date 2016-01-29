@@ -9,18 +9,18 @@ namespace PureCat.Message.Spi.Internals
 {
     public class StatusUpdateTask
     {
-        internal readonly NodeStatusInfo m_nodeInfo = null;
+        internal readonly NodeStatusInfo _nodeInfo = null;
 
         public StatusUpdateTask(IMessageStatistics mStatistics)
         {
             try
             {
-                m_nodeInfo = new NodeStatusInfo(mStatistics);
-                m_nodeInfo.HeartBeatExtensions.Add(new CpuInfo());
-                m_nodeInfo.HeartBeatExtensions.Add(new NetworkIO());
-                m_nodeInfo.HeartBeatExtensions.Add(new DiskIO());
-                m_nodeInfo.Refresh();
-                m_nodeInfo.HaveAcessRight = true;
+                _nodeInfo = new NodeStatusInfo(mStatistics);
+                _nodeInfo.HeartbeatExtensions.Add(new CpuInfo());
+                _nodeInfo.HeartbeatExtensions.Add(new NetworkIO());
+                _nodeInfo.HeartbeatExtensions.Add(new DiskIO());
+                _nodeInfo.Refresh();
+                _nodeInfo.HaveAcessRight = true;
             }
             catch
             {
@@ -31,13 +31,13 @@ namespace PureCat.Message.Spi.Internals
         {
             while (true)
             {
-                if (!m_nodeInfo.HaveAcessRight)
+                if (!_nodeInfo.HaveAcessRight)
                     break;
-                m_nodeInfo.Refresh();
+                _nodeInfo.Refresh();
                 ITransaction t = PureCat.GetProducer().NewTransaction("System", "Status");
-                var xml = XmlHelper.XmlSerialize(m_nodeInfo, Encoding.UTF8);
+                var xml = XmlHelper.XmlSerialize(_nodeInfo, Encoding.UTF8);
 
-                Logger.Info(xml);
+                //Logger.Info(xml);
 
                 PureCat.GetProducer().LogHeartbeat("Heartbeat", AppEnv.IP, "0", xml);
                 t.Complete();

@@ -320,8 +320,6 @@ namespace PureCat.Message.Spi.Internals
                             _mTree.MessageId = null;
                             _mTree.Message = null;
 
-                            //TODO
-
                             manager.Flush(tree);
                             return true;
                         }
@@ -490,7 +488,7 @@ namespace PureCat.Message.Spi.Internals
                     {
                         DefaultTransaction tran = list[i] as DefaultTransaction;
                         tran.Timestamp = timestamp;
-                        tran.DurationInMicros = MilliSecondTimer.CurrentTimeMicros();
+                        tran.DurationInMicros = -1;
                     }
 
                     IEvent next = new DefaultEvent("RemoteCall", "Next");

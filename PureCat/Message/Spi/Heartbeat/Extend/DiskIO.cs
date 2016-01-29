@@ -5,24 +5,24 @@ namespace PureCat.Message.Spi.Heartbeat.Extend
 {
     public class DiskIO : HeartbeatExtention
     {
-        protected Dictionary<string, double> m_dict = null;
+        protected Dictionary<string, double> _dict = null;
 
-        protected PerformanceCounter m_readBytesSec = null;
+        protected PerformanceCounter _readBytesSec = null;
 
-        protected PerformanceCounter m_writeByteSec = null;
-        protected PerformanceCounter m_dataBytesSec = null;
+        protected PerformanceCounter _writeByteSec = null;
+        protected PerformanceCounter _dataBytesSec = null;
 
         public DiskIO()
         {
-            m_dict = new Dictionary<string, double>();
-            m_readBytesSec = new PerformanceCounter("PhysicalDisk", "Disk Reads/sec", "_Total");
-            m_writeByteSec = new PerformanceCounter("PhysicalDisk", "Disk Writes/sec", "_Total");
-            m_dataBytesSec = new PerformanceCounter("PhysicalDisk", "Disk Transfers/sec", "_Total");
+            _dict = new Dictionary<string, double>();
+            _readBytesSec = new PerformanceCounter("PhysicalDisk", "Disk Reads/sec", "_Total");
+            _writeByteSec = new PerformanceCounter("PhysicalDisk", "Disk Writes/sec", "_Total");
+            _dataBytesSec = new PerformanceCounter("PhysicalDisk", "Disk Transfers/sec", "_Total");
         }
 
         public override Dictionary<string, double> Dict
         {
-            get { return m_dict; }
+            get { return _dict; }
         }
 
         public override string Id
@@ -32,9 +32,9 @@ namespace PureCat.Message.Spi.Heartbeat.Extend
 
         public override void Refresh()
         {
-            m_dict["Read"] = m_readBytesSec.NextValue();
-            m_dict["Write"] = m_writeByteSec.NextValue();
-            m_dict["Total"] = m_dataBytesSec.NextValue();
+            _dict["Read"] = _readBytesSec.NextValue();
+            _dict["Write"] = _writeByteSec.NextValue();
+            _dict["Total"] = _dataBytesSec.NextValue();
         }
     }
 }

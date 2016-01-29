@@ -21,10 +21,8 @@ namespace PureCat.Demo
                 var context = PureCat.DoTransaction("Do", nameof(DoTest), DoTest);
 
                 var b = DateTime.Now.Second;
-                Task.Factory.StartNew(() =>
-                {
-                    PureCat.DoTransaction("Do", nameof(Add), () => Add(a, b, context));
-                });
+
+                PureCat.DoTransaction("Do", nameof(Add), () => Add(a, b, context));
             }
 
         }
