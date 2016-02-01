@@ -24,7 +24,7 @@ namespace PureCat.Message.Spi.Internals
 
         public void OnBytes(int size)
         {
-            Interlocked.Add(ref _bytes, size);
+            Interlocked.Exchange(ref _bytes, Interlocked.Add(ref _bytes, size));
         }
 
         public void Reset()

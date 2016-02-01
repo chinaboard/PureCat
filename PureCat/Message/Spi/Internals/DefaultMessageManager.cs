@@ -189,7 +189,6 @@ namespace PureCat.Message.Spi.Internals
         }
 
         #endregion
-
         public MessageIdFactory GetMessageIdFactory()
         {
             return _mFactory;
@@ -197,6 +196,10 @@ namespace PureCat.Message.Spi.Internals
 
         internal void Flush(IMessageTree tree)
         {
+            if (tree.MessageId == null)
+            {
+                tree.MessageId = NextMessageId();
+            }
             if (_mSender != null)
             {
                 _mSender.Send(tree);
@@ -364,7 +367,6 @@ namespace PureCat.Message.Spi.Internals
                 }
                 else
                 {
-                    _mTree.MessageId = manager.NextMessageId();
                     _mTree.Message = transaction;
                 }
 

@@ -45,8 +45,8 @@ namespace PureCat.Message.Spi.Heartbeat.Extend
         {
             _adappterList.ForEach(item =>
             {
-                _dict[item.Name + "_Send"] = item.NetworkBytesSend.NextValue();
-                _dict[item.Name + "_Received"] = item.NetworkBytesReceived.NextValue();
+                _dict[item.Name + " Bytes Sent/sec"] = item.NetworkBytesSend.NextValue();
+                _dict[item.Name + " Bytes Received/sec"] = item.NetworkBytesReceived.NextValue();
             });
         }
 
