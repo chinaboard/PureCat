@@ -24,10 +24,17 @@ namespace PureCat.Message.Spi.Heartbeat.Extend
                 var nicName = name.Replace('[', '(').Replace(']', ')');
                 if (!interfaces.Select(t => t.Description).Contains(nicName) || nicName.ToLower().Contains("loopback"))
                     continue;
-                NetworkAdapter adapter = new NetworkAdapter(interfaces.First(t => t.Description.Contains(nicName)).Name);
-                adapter.NetworkBytesReceived = new PerformanceCounter("Network Interface", "Bytes Received/sec", name);
-                adapter.NetworkBytesSend = new PerformanceCounter("Network Interface", "Bytes Sent/sec", name);
-                _adappterList.Add(adapter);			// Add it to ArrayList adapter
+                try
+                {
+                    NetworkAdapter adapter = new NetworkAdapter(interfaces.First(t => t.Description.Contains(nicName)).Name);
+                    adapter.NetworkBytesReceived = new PerformanceCounter("Network Interface", "Bytes Received/sec", name);
+                    adapter.NetworkBytesSend = new PerformanceCounter("Network Interface", "Bytes Sent/sec", name);
+                    _adappterList.Add(adapter);         // Add it to ArrayList adapter
+                }
+                catch
+                {
+                    //pass
+                }
             }
         }
 
