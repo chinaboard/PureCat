@@ -4,6 +4,6 @@
   <domain id="BStestMVC" enabled="true" />
   <servers>
     <!--<server ip="127.0.0.1" port="2280" />-->
-    <server ip="10.14.40.4" port="2280" />
+    <server ip="10.14.40.4" port="2280" webport="8080" />
   </servers>
 </doc>

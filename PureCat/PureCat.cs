@@ -18,7 +18,7 @@ namespace PureCat
         private static readonly PureCat _instance = null;
         private static readonly object _lock = new object();
 
-        private bool _Initialized;
+        public bool Initialized { get; private set; } = false;
 
         public IMessageManager MessageManager { get; private set; }
 
@@ -38,6 +38,22 @@ namespace PureCat
             }
         }
 
+        public static void Initialize()
+        {
+            if (_instance.Initialized)
+                return;
+            Logger.Info($"Initializing Cat .Net Client ...Cat.Version : {System.Reflection.Assembly.GetExecutingAssembly().GetName().Version}");
+
+            ClientConfigManager configManager = new ClientConfigManager("CatConfig.xml");
+            DefaultMessageManager manager = new DefaultMessageManager();
+
+            manager.InitializeClient(configManager.ClientConfig);
+            _instance.MessageManager = manager;
+            _instance.MessageProducer = new DefaultMessageProducer(manager);
+            _instance.Initialized = true;
+            Logger.Info("Cat .Net Client initialized.");
+        }
+
         public static IMessageManager GetManager()
         {
             return _instance.MessageManager;
@@ -48,27 +64,9 @@ namespace PureCat
             return _instance.MessageProducer;
         }
 
-
-        public static void Initialize(ClientConfig clientConfig)
-        {
-            Logger.Info("Cat.Version : {0}", System.Reflection.Assembly.GetExecutingAssembly().GetName().Version);
-            if (_instance._Initialized)
-                return;
-
-            Logger.Info("Initializing Cat .Net Client ...");
-
-            DefaultMessageManager manager = new DefaultMessageManager();
-
-            manager.InitializeClient(clientConfig);
-            _instance.MessageProducer = new DefaultMessageProducer(manager);
-            _instance.MessageManager = manager;
-            _instance._Initialized = true;
-            Logger.Info("Cat .Net Client initialized.");
-        }
-
         public static bool IsInitialized()
         {
-            bool isInitialized = _instance._Initialized;
+            bool isInitialized = _instance.Initialized;
             if (isInitialized && !_instance.MessageManager.HasContext())
             {
                 _instance.MessageManager.Setup();

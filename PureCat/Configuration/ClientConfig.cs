@@ -8,17 +8,17 @@ namespace PureCat.Configuration
     /// </summary>
     public class ClientConfig
     {
-        private List<Server> _mServers;
         private Domain _mDomain;
-        private Random _mRandom;
+        private Random _mRandom = new Random();
+        private readonly object _lock = new object();
+
+        private List<Server> _server = new List<Server>();
 
         public ClientConfig(Domain domain = null, params Server[] serverList)
         {
-            _mRandom = new Random();
-            _mServers = new List<Server>();
             _mDomain = domain ?? new Domain();
             if (serverList != null && serverList.Length != 0)
-                _mServers.AddRange(serverList);
+                Servers.AddRange(serverList);
             RandomServer();
         }
 
@@ -32,26 +32,26 @@ namespace PureCat.Configuration
         /// <summary>
         ///   Cat日志服务器，可以有多个
         /// </summary>
-        public List<Server> Servers
+        public List<Server> Servers { get { return _server; } set { lock (_lock) _server = value; } }
+        public void RandomServer()
         {
-            get { return _mServers; }
-        }
-        private void RandomServer()
-        {
-            if (_mServers == null || _mServers.Count < 2)
+            if (_server == null || _server.Count < 2)
                 return;
-            int k = 0;
-            int index = 0;
-            Server tmpServer = null;
-            for (int i = 0; i < _mServers.Count * 3; i++)
+            lock (_lock)
             {
-                index = i % _mServers.Count;
-                k = _mRandom.Next(_mServers.Count);
-                if (k != index)
+                int k = 0;
+                int index = 0;
+                Server tmpServer = null;
+                for (int i = 0; i < _server.Count * 3; i++)
                 {
-                    tmpServer = _mServers[index];
-                    _mServers[index] = _mServers[k];
-                    _mServers[k] = tmpServer;
+                    index = i % _server.Count;
+                    k = _mRandom.Next(_server.Count);
+                    if (k != index)
+                    {
+                        tmpServer = _server[index];
+                        _server[index] = _server[k];
+                        _server[k] = tmpServer;
+                    }
                 }
             }
 
