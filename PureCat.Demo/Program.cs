@@ -13,7 +13,7 @@ namespace PureCat.Demo
         static Random _rand = new Random();
         static void Main(string[] args)
         {
-            PureCat.Initialize(new Configuration.ClientConfig(new Configuration.Domain("PureCat.Demo"), new Configuration.Server("10.14.40.4")));
+            PureCat.Initialize();
             while (true)
             {
                 var a = DateTime.Now.Second;
