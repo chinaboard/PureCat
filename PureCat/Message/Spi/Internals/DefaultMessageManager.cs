@@ -176,16 +176,13 @@ namespace PureCat.Message.Spi.Internals
         {
             Context ctx = GetContext();
 
-            if (ctx != null)
+            if (ctx != null && transaction.Standalone)
             {
-                //if (!transaction.Standalone) return;
                 if (ctx.End(this, transaction))
                 {
                     _mContext.Dispose();
                 }
             }
-            else
-                Logger.Warn("Context没取到");
         }
 
         #endregion
@@ -203,6 +200,8 @@ namespace PureCat.Message.Spi.Internals
             if (_mSender != null)
             {
                 _mSender.Send(tree);
+
+                Reset();
 
                 if (_mStatistics != null)
                 {
@@ -298,47 +297,35 @@ namespace PureCat.Message.Spi.Internals
             ///<returns> true if message is flushed, false otherwise </returns>
             public bool End(DefaultMessageManager manager, ITransaction transaction)
             {
-                try
+                if (_mStack.Count != 0)
                 {
-                    if (_mStack.Count != 0)
+                    ITransaction current = _mStack.Pop();
+
+                    if (transaction == current)
                     {
-                        ITransaction current = _mStack.Pop();
-
-                        if (transaction == current)
-                        {
-                            ValidateTransaction(manager, _mStack.Count == 0 ? null : _mStack.Peek(), current);
-                        }
-                        else
-                        {
-                            while (transaction != current && _mStack.Count != 0)
-                            {
-                                current = _mStack.Pop();
-                            }
-                        }
-
-
-                        if (_mStack.Count == 0)
-                        {
-                            IMessageTree tree = _mTree.Copy();
-                            _mTree.MessageId = null;
-                            _mTree.Message = null;
-
-                            manager.Flush(tree);
-                            return true;
-                        }
-                        return false;
+                        ValidateTransaction(manager, _mStack.Count == 0 ? null : _mStack.Peek(), current);
                     }
-                    throw new Exception("Stack为空, 没找到对应的Transaction.");
+                    else
+                    {
+                        while (transaction != current && _mStack.Count != 0)
+                        {
+                            ValidateTransaction(manager, _mStack.Peek(), current);
+                            current = _mStack.Pop();
+                        }
+                    }
 
+
+                    if (_mStack.Count == 0)
+                    {
+                        IMessageTree tree = _mTree.Copy();
+                        _mTree.MessageId = null;
+                        _mTree.Message = null;
+
+                        manager.Flush(tree);
+                        return true;
+                    }
                 }
-                catch (Exception ex)
-                {
-                    var exTran = PureCat.GetProducer().NewTransaction("Cat", "CatMessageManager");
-                    PureCat.GetProducer().LogError(ex);
-                    exTran.SetStatus(ex);
-                    exTran.Complete();
-                    return false;
-                }
+                return false;
             }
 
             /// <summary>
@@ -441,7 +428,6 @@ namespace PureCat.Message.Spi.Internals
                         {
                             MarkAsRunAway(parent, transaction as DefaultTaggedTransaction);
                         }
-
                     }
                 }
             }
