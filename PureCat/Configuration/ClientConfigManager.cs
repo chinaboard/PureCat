@@ -177,7 +177,8 @@ namespace PureCat.Configuration
         {
             if (ClientConfig == null)
                 return null;
-            foreach (var server in ClientConfig.Servers)
+            var serverList = ClientConfig.Servers.Where(server => server.Enabled);
+            foreach (var server in serverList)
             {
                 return $"http://{server.Ip}:{(webPort > 0 ? webPort : server.WebPort)}/cat/s/router?domain={ClientConfig.Domain.Id}";
             }
