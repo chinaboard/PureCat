@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Text;
-using System.Web;
-
-namespace PureCat.Util
+﻿namespace PureCat.Util
 {
     public static class AppEnv
     {

@@ -1,9 +1,7 @@
 ﻿using PureCat.Util;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Xml;
 
 namespace PureCat.Configuration
@@ -69,7 +67,7 @@ namespace PureCat.Configuration
                     servers.ForEach(server =>
                     {
                         config.Servers.Add(server);
-                        Logger.Info("CAT server configured: {0}:{1}", server.Ip, server.Port);
+                        Logger.Info("Cat server configured: {0}:{1}", server.Ip, server.Port);
                     });
                 }
             }
