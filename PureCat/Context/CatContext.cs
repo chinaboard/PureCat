@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace PureCat.Context
 {
-    public class CatContext : IEnumerable<KeyValuePair<string, string>>
+    public class CatContext
     {
         private Dictionary<string, string> _dict = new Dictionary<string, string>();
 
@@ -32,11 +32,6 @@ namespace PureCat.Context
         {
             foreach (var item in _dict)
                 yield return item;
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
         }
     }
 }
