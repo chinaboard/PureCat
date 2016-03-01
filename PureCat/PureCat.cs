@@ -36,13 +36,28 @@ namespace PureCat
             }
         }
 
-        public static void Initialize()
+        /// <summary>
+        /// 根据配置文件初始化PureCat，默认使用CatConfig.xml
+        /// </summary>
+        /// <param name="configFilePath">配置文件路径</param>
+        public static void Initialize(string configFilePath = null)
+        {
+            Initialize(new ClientConfigManager(configFilePath ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "CatConfig.xml")));
+        }
+
+        /// <summary>
+        /// 根据ClientConfig初始化PureCat
+        /// </summary>
+        public static void Initialize(ClientConfig clientConfig)
+        {
+            Initialize(new ClientConfigManager(clientConfig));
+        }
+
+        private static void Initialize(ClientConfigManager configManager)
         {
             if (_instance.Initialized)
                 return;
             Logger.Info($"Initializing Cat .Net Client ...Cat.Version : {PureCat.Version}");
-            var configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "CatConfig.xml");
-            ClientConfigManager configManager = new ClientConfigManager(configPath);
             DefaultMessageManager manager = new DefaultMessageManager();
 
             manager.InitializeClient(configManager.ClientConfig);
@@ -72,12 +87,18 @@ namespace PureCat
             return isInitialized;
         }
 
-
+        /// <summary>
+        /// 执行事务
+        /// </summary>
+        /// <param name="customCatch">捕获异常时的处理方法</param>
         public static T DoTransaction<T>(string type, string name, Func<T> func, Func<Exception, T> customCatch = null)
         {
             return DoTransaction<Exception, T>(type, name, func, customCatch);
         }
-
+        /// <summary>
+        /// 执行事务
+        /// </summary>
+        /// <param name="customCatch">捕获异常时的处理方法</param>
         public static T DoTransaction<Ex, T>(string type, string name, Func<T> func, Func<Ex, T> customCatch = null) where Ex : Exception
         {
             var tran = NewTransaction(type, name);
@@ -103,12 +124,18 @@ namespace PureCat
                 tran.Complete();
             }
         }
-
+        /// <summary>
+        /// 执行事务
+        /// </summary>
+        /// <param name="customCatch">捕获异常时的处理方法</param>
         public static void DoTransaction(string type, string name, Action action, Action<Exception> customCatch = null)
         {
             DoTransaction<Exception>(type, name, action, customCatch);
         }
-
+        /// <summary>
+        /// 执行事务
+        /// </summary>
+        /// <param name="customCatch">捕获异常时的处理方法</param>
         public static void DoTransaction<Ex>(string type, string name, Action action, Action<Ex> customCatch = null) where Ex : Exception
         {
             var tran = NewTransaction(type, name);
@@ -183,7 +210,10 @@ namespace PureCat
             return GetProducer().CreateMessageId();
         }
 
-
+        /// <summary>
+        /// 客户端创建请求上下文
+        /// </summary>
+        /// <param name="contextName">上下文名称</param>
         public static CatContext LogRemoteCallClient(string contextName)
         {
             var ctx = new CatContext(contextName);
@@ -214,17 +244,21 @@ namespace PureCat
             return ctx;
         }
 
-        public static void LogRemoteCallServer(CatContext ctx)
+        /// <summary>
+        /// 服务端串联上下文
+        /// </summary>
+        /// <param name="context">上下文</param>
+        public static void LogRemoteCallServer(CatContext context)
         {
-            if (ctx == null)
+            if (context == null)
             {
                 return;
             }
 
             var tree = GetManager().ThreadLocalMessageTree;
-            var messageId = ctx.CatChildId;
-            var rootId = ctx.CatRootId;
-            var parentId = ctx.CatParentId;
+            var messageId = context.CatChildId;
+            var rootId = context.CatRootId;
+            var parentId = context.CatParentId;
 
             if (messageId != null)
             {

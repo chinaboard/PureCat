@@ -33,5 +33,10 @@ namespace PureCat.Context
             foreach (var item in _dict)
                 yield return item;
         }
+
+        public override string ToString()
+        {
+            return $"{nameof(ContextName)}:{ContextName}\r\n{nameof(CatRootId)}:{CatRootId}\r\n{nameof(CatParentId)}:{CatParentId}\r\n{nameof(CatChildId)}:{CatChildId}";
+        }
     }
 }
