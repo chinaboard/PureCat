@@ -26,7 +26,7 @@ namespace PureCat.Message.Spi.Heartbeat
             MemoryInfo = new MemoryInfo();
             ThreadInfo = new ThreadInfo();
             MessageInfo = new MessageInfo(statistics);
-            HeartBeatExtensions = new List<HeartbeatExtention>();
+            HeartbeatExtensions = new List<HeartbeatExtention>();
             Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
             ns.Add("", "");
         }
@@ -45,7 +45,7 @@ namespace PureCat.Message.Spi.Heartbeat
 
         public MessageInfo MessageInfo { get; set; }
 
-        public List<HeartbeatExtention> HeartBeatExtensions { get; set; }
+        public List<HeartbeatExtention> HeartbeatExtensions { get; set; }
 
         public void Refresh()
         {
@@ -72,7 +72,7 @@ namespace PureCat.Message.Spi.Heartbeat
             MemoryInfo.Refresh();
             ThreadInfo.Refresh();
             MessageInfo.Refresh();
-            HeartBeatExtensions.ForEach(item => item.Refresh());
+            HeartbeatExtensions.ForEach(item => item.Refresh());
         }
 
         #region IXmlSerializable
@@ -115,7 +115,7 @@ namespace PureCat.Message.Spi.Heartbeat
             serializer = new XmlSerializer(typeof(MessageInfo));
             serializer.Serialize(writer, MessageInfo, ns);
 
-            HeartBeatExtensions.ForEach(item =>
+            HeartbeatExtensions.ForEach(item =>
             {
                 writer.WriteStartElement("extension");
                 writer.WriteAttributeString("id", item.Id);

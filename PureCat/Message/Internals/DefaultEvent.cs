@@ -1,5 +1,4 @@
 ﻿using PureCat.Message.Spi;
-using System;
 
 namespace PureCat.Message.Internals
 {

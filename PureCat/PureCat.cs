@@ -5,11 +5,7 @@ using PureCat.Message.Spi;
 using PureCat.Message.Spi.Internals;
 using PureCat.Util;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Xml;
 
 namespace PureCat
 {
@@ -18,11 +14,13 @@ namespace PureCat
         private static readonly PureCat _instance = null;
         private static readonly object _lock = new object();
 
-        private bool _mInitialized;
+        public static string Version { get { return $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Version}"; } }
 
-        private IMessageManager _mManager;
+        public bool Initialized { get; private set; } = false;
 
-        private IMessageProducer _mProducer;
+        public IMessageManager MessageManager { get; private set; }
+
+        public IMessageProducer MessageProducer { get; private set; }
 
         static PureCat()
         {
@@ -38,40 +36,38 @@ namespace PureCat
             }
         }
 
+        public static void Initialize()
+        {
+            if (_instance.Initialized)
+                return;
+            Logger.Info($"Initializing Cat .Net Client ...Cat.Version : {PureCat.Version}");
+            var configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "CatConfig.xml");
+            ClientConfigManager configManager = new ClientConfigManager(configPath);
+            DefaultMessageManager manager = new DefaultMessageManager();
+
+            manager.InitializeClient(configManager.ClientConfig);
+            _instance.MessageManager = manager;
+            _instance.MessageProducer = new DefaultMessageProducer(manager);
+            _instance.Initialized = true;
+            Logger.Info("Cat .Net Client initialized.");
+        }
+
         public static IMessageManager GetManager()
         {
-            return _instance._mManager;
+            return _instance.MessageManager;
         }
 
         public static IMessageProducer GetProducer()
         {
-            return _instance._mProducer;
-        }
-
-
-        public static void Initialize(ClientConfig clientConfig)
-        {
-            Logger.Info("Cat.Version : {0}", System.Reflection.Assembly.GetExecutingAssembly().GetName().Version);
-            if (_instance._mInitialized)
-                return;
-
-            Logger.Info("Initializing Cat .Net Client ...");
-
-            DefaultMessageManager manager = new DefaultMessageManager();
-
-            manager.InitializeClient(clientConfig);
-            _instance._mProducer = new DefaultMessageProducer(manager);
-            _instance._mManager = manager;
-            _instance._mInitialized = true;
-            Logger.Info("Cat .Net Client initialized.");
+            return _instance.MessageProducer;
         }
 
         public static bool IsInitialized()
         {
-            bool isInitialized = _instance._mInitialized;
-            if (isInitialized && !_instance._mManager.HasContext())
+            bool isInitialized = _instance.Initialized;
+            if (isInitialized && !_instance.MessageManager.HasContext())
             {
-                _instance._mManager.Setup();
+                _instance.MessageManager.Setup();
             }
             return isInitialized;
         }
@@ -140,6 +136,16 @@ namespace PureCat
         }
 
 
+        public static ITaggedTransaction NewTaggedTransaction(string type, string name, string tag)
+        {
+            return GetProducer().NewTaggedTransaction(type, name, tag);
+        }
+
+        public static IForkedTransaction NewForkedTransaction(string type, string name)
+        {
+            return GetProducer().NewForkedTransaction(type, name);
+        }
+
         public static ITransaction NewTransaction(string type, string name)
         {
             return GetProducer().NewTransaction(type, name);
@@ -192,7 +198,7 @@ namespace PureCat
             var messageId = tree.MessageId;
 
             var childId = CreateMessageId();
-            LogEvent("RemoteCall", ctx.ContextName, "0", childId);
+            LogEvent(PureCatConstants.TYPE_REMOTE_CALL, ctx.ContextName, PureCatConstants.SUCCESS, childId);
 
             var rootId = tree.RootMessageId;
 
@@ -235,12 +241,12 @@ namespace PureCat
         }
 
 
-        public static void LogEvent(string type, string name, string status = "0", string nameValuePairs = null)
+        public static void LogEvent(string type, string name, string status = PureCatConstants.SUCCESS, string nameValuePairs = null)
         {
             GetProducer().LogEvent(type, name, status, nameValuePairs);
         }
 
-        public static void LogHeartbeat(string type, string name, string status = "0", string nameValuePairs = null)
+        public static void LogHeartbeat(string type, string name, string status = PureCatConstants.SUCCESS, string nameValuePairs = null)
         {
             GetProducer().LogHeartbeat(type, name, status, nameValuePairs);
         }
@@ -260,7 +266,7 @@ namespace PureCat
             LogMetricInternal(name, "T", string.Format("{0:F}", value));
         }
 
-        public static void logMetricForSum(string name, double value)
+        public static void LogMetricForSum(string name, double value)
         {
             LogMetricInternal(name, "S", string.Format("{0:F}", value));
         }

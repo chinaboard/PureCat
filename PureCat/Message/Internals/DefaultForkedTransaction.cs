@@ -1,8 +1,5 @@
 ﻿using PureCat.Message.Spi;
-using PureCat.Util;
-//using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
 
 namespace PureCat.Message.Internals
 {

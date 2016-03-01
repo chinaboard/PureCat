@@ -5,36 +5,27 @@
     /// </summary>
     public class Server
     {
-        private readonly string _mIp;
-
-        private readonly int _mPort;
-
         public Server(string ip, int port = 2280)
         {
-            _mIp = ip;
-            _mPort = port;
-            Enabled = true;
+            Ip = ip;
+            Port = port;
         }
 
         /// <summary>
         ///   Cat服务器IP
         /// </summary>
-        public string Ip
-        {
-            get { return _mIp; }
-        }
+        public string Ip { get; private set; }
 
         /// <summary>
         ///   Cat服务器端口
         /// </summary>
-        public int Port
-        {
-            get { return _mPort; }
-        }
+        public int Port { get; private set; } = 2280;
+
+        public int WebPort { get; private set; } = 8080;
 
         /// <summary>
         ///   Cat服务器是否有效，默认有效
         /// </summary>
-        public bool Enabled { get; set; }
+        public bool Enabled { get; set; } = true;
     }
 }

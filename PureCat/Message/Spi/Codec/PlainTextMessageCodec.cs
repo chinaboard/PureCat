@@ -374,6 +374,10 @@ namespace PureCat.Message.Spi.Codec
             {
                 return EncodeLine(message, buf, 'E', Policy.DEFAULT);
             }
+            if (message is ITrace)
+            {
+                return EncodeLine(message, buf, 'L', Policy.DEFAULT);
+            }
             if (message is IHeartbeat)
             {
                 return EncodeLine(message, buf, 'H', Policy.DEFAULT);

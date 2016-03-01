@@ -176,20 +176,16 @@ namespace PureCat.Message.Spi.Internals
         {
             Context ctx = GetContext();
 
-            if (ctx != null)
+            if (ctx != null && transaction.Standalone)
             {
-                //if (!transaction.Standalone) return;
                 if (ctx.End(this, transaction))
                 {
                     _mContext.Dispose();
                 }
             }
-            else
-                Logger.Warn("Context没取到");
         }
 
         #endregion
-
         public MessageIdFactory GetMessageIdFactory()
         {
             return _mFactory;
@@ -197,9 +193,15 @@ namespace PureCat.Message.Spi.Internals
 
         internal void Flush(IMessageTree tree)
         {
+            if (tree.MessageId == null)
+            {
+                tree.MessageId = NextMessageId();
+            }
             if (_mSender != null)
             {
                 _mSender.Send(tree);
+
+                Reset();
 
                 if (_mStatistics != null)
                 {
@@ -295,49 +297,35 @@ namespace PureCat.Message.Spi.Internals
             ///<returns> true if message is flushed, false otherwise </returns>
             public bool End(DefaultMessageManager manager, ITransaction transaction)
             {
-                try
+                if (_mStack.Count != 0)
                 {
-                    if (_mStack.Count != 0)
+                    ITransaction current = _mStack.Pop();
+
+                    if (transaction == current)
                     {
-                        ITransaction current = _mStack.Pop();
-
-                        if (transaction == current)
-                        {
-                            ValidateTransaction(manager, _mStack.Count == 0 ? null : _mStack.Peek(), current);
-                        }
-                        else
-                        {
-                            while (transaction != current && _mStack.Count != 0)
-                            {
-                                current = _mStack.Pop();
-                            }
-                        }
-
-
-                        if (_mStack.Count == 0)
-                        {
-                            IMessageTree tree = _mTree.Copy();
-                            _mTree.MessageId = null;
-                            _mTree.Message = null;
-
-                            //TODO
-
-                            manager.Flush(tree);
-                            return true;
-                        }
-                        return false;
+                        ValidateTransaction(manager, _mStack.Count == 0 ? null : _mStack.Peek(), current);
                     }
-                    throw new Exception("Stack为空, 没找到对应的Transaction.");
+                    else
+                    {
+                        while (transaction != current && _mStack.Count != 0)
+                        {
+                            ValidateTransaction(manager, _mStack.Peek(), current);
+                            current = _mStack.Pop();
+                        }
+                    }
 
+
+                    if (_mStack.Count == 0)
+                    {
+                        IMessageTree tree = _mTree.Copy();
+                        _mTree.MessageId = null;
+                        _mTree.Message = null;
+
+                        manager.Flush(tree);
+                        return true;
+                    }
                 }
-                catch (Exception ex)
-                {
-                    var exTran = PureCat.GetProducer().NewTransaction("Cat", "CatMessageManager");
-                    PureCat.GetProducer().LogError(ex);
-                    exTran.SetStatus(ex);
-                    exTran.Complete();
-                    return false;
-                }
+                return false;
             }
 
             /// <summary>
@@ -366,7 +354,6 @@ namespace PureCat.Message.Spi.Internals
                 }
                 else
                 {
-                    _mTree.MessageId = manager.NextMessageId();
                     _mTree.Message = transaction;
                 }
 
@@ -378,11 +365,11 @@ namespace PureCat.Message.Spi.Internals
 
             internal void LinkAsRunAway(DefaultMessageManager manager, IForkedTransaction transaction)
             {
-                IEvent @event = new DefaultEvent("RemoteCall", "RunAway");
+                IEvent @event = new DefaultEvent(PureCatConstants.TYPE_REMOTE_CALL, "RunAway");
 
                 @event.AddData(transaction.ForkedMessageId, $"{transaction.Type}:{transaction.Name}");
                 @event.Timestamp = transaction.Timestamp;
-                @event.Status = "0";
+                @event.Status = PureCatConstants.SUCCESS;
                 @event.Complete();
 
                 transaction.Standalone = true;
@@ -396,7 +383,7 @@ namespace PureCat.Message.Spi.Internals
                     transaction.AddData("RunAway");
                 }
 
-                transaction.Status = "0";
+                transaction.Status = PureCatConstants.SUCCESS;
                 transaction.Standalone = true;
                 transaction.Complete();
             }
@@ -441,7 +428,6 @@ namespace PureCat.Message.Spi.Internals
                         {
                             MarkAsRunAway(parent, transaction as DefaultTaggedTransaction);
                         }
-
                     }
                 }
             }
@@ -480,7 +466,7 @@ namespace PureCat.Message.Spi.Internals
                     target.Timestamp = source.Timestamp;
                     target.DurationInMicros = source.DurationInMicros;
                     target.AddData(source.Data);
-                    target.Status = "0";
+                    target.Status = PureCatConstants.SUCCESS;
 
                     MigrateMessage(manager, stack, source, target, 1);
 
@@ -490,12 +476,12 @@ namespace PureCat.Message.Spi.Internals
                     {
                         DefaultTransaction tran = list[i] as DefaultTransaction;
                         tran.Timestamp = timestamp;
-                        tran.DurationInMicros = MilliSecondTimer.CurrentTimeMicros();
+                        tran.DurationInMicros = -1;
                     }
 
-                    IEvent next = new DefaultEvent("RemoteCall", "Next");
+                    IEvent next = new DefaultEvent(PureCatConstants.TYPE_REMOTE_CALL, "Next");
                     next.AddData(childId);
-                    next.Status = "0";
+                    next.Status = PureCatConstants.SUCCESS;
                     target.AddChild(next);
 
                     IMessageTree t = tree.Copy();
@@ -528,7 +514,7 @@ namespace PureCat.Message.Spi.Internals
                         cloned.Timestamp = current.Timestamp;
                         cloned.DurationInMicros = current.DurationInMicros;
                         cloned.AddData(current.Data);
-                        cloned.Status = "0";
+                        cloned.Status = PureCatConstants.SUCCESS;
 
                         target.AddChild(cloned);
                         MigrateMessage(manager, stack, current, cloned, level + 1);

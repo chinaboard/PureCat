@@ -15,7 +15,7 @@ namespace PureCat.Message.Internals
         private StringBuilder _mData;
         private IMessageManager _messageManager;
 
-        private string _mStatus = "0";
+        private string _mStatus = PureCatConstants.SUCCESS;
 
         protected AbstractMessage(string type, string name, IMessageManager messageManager = null)
         {
@@ -102,7 +102,7 @@ namespace PureCat.Message.Internals
 
         public bool IsSuccess()
         {
-            return "0" == _mStatus;
+            return PureCatConstants.SUCCESS == _mStatus;
         }
 
         public void SetStatus(Exception e)

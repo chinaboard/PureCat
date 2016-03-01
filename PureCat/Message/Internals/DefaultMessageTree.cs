@@ -1,5 +1,4 @@
 ﻿using PureCat.Message.Spi.Codec;
-using System;
 
 namespace PureCat.Message.Internals
 {

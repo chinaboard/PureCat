@@ -34,7 +34,7 @@ namespace PureCat.Message
         /**
          * Get the message status.
          * 
-         * @return message status. "0" means success, otherwise error code.
+         * @return message status. PureCatConstants.SUCCESS or "0" means success, otherwise error code.
          */
         string Status { get; set; }
 

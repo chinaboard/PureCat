@@ -40,6 +40,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Configuration\ClientConfigManager.cs" />
     <Compile Include="Message\IForkedTransaction.cs" />
     <Compile Include="Message\Internals\DefaultForkedTransaction.cs" />
     <Compile Include="Message\Internals\DefaultTaggedTransaction.cs" />
@@ -92,12 +93,19 @@
     <Compile Include="Message\Spi\IO\IMessageSender.cs" />
     <Compile Include="Message\Spi\IO\TcpMessageSender.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="PureCatConstants.cs" />
     <Compile Include="Util\AppEnv.cs" />
+    <Compile Include="Util\CatHttpRequest.cs" />
     <Compile Include="Util\CatThreadLocal.cs" />
     <Compile Include="Util\Logger.cs" />
     <Compile Include="Util\MilliSecondTimer.cs" />
     <Compile Include="Util\NetworkInterfaceManager.cs" />
     <Compile Include="Util\XmlHelper.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="CatConfig.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

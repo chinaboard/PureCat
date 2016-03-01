@@ -8,11 +8,11 @@ namespace PureCat.Message.Spi.Heartbeat
     [XmlRoot("os")]
     public class OSInfo : IRefresh
     {
-        private ComputerInfo m_computer = null;
+        private ComputerInfo _computer = null;
 
         public OSInfo()
         {
-            m_computer = new ComputerInfo();
+            _computer = new ComputerInfo();
         }
 
         [XmlAttribute("name")]
@@ -50,12 +50,12 @@ namespace PureCat.Message.Spi.Heartbeat
 
         public void Refresh()
         {
-            Name = m_computer.OSFullName;
-            Arch = m_computer.OSPlatform;
-            Version = m_computer.OSVersion;
+            Name = _computer.OSFullName;
+            Arch = _computer.OSPlatform;
+            Version = _computer.OSVersion;
             ProcessCount = Environment.ProcessorCount;
-            TotalMemory = m_computer.TotalPhysicalMemory;
-            FreeMemory = m_computer.TotalPhysicalMemory - m_computer.AvailablePhysicalMemory;
+            TotalMemory = _computer.TotalPhysicalMemory;
+            FreeMemory = _computer.TotalPhysicalMemory - _computer.AvailablePhysicalMemory;
             ProcessTime = Process.GetCurrentProcess().TotalProcessorTime.Ticks / TimeSpan.TicksPerSecond;
         }
     }

@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace PureCat.Context
 {
-    public class CatContext : IEnumerable<KeyValuePair<string, string>>
+    public class CatContext
     {
         private Dictionary<string, string> _dict = new Dictionary<string, string>();
 
@@ -17,7 +15,7 @@ namespace PureCat.Context
         public string CatRootId { get { return this[_catRootId]; } set { this[_catRootId] = value; } }
         public string CatParentId { get { return this[_catParentId]; } set { this[_catParentId] = value; } }
         public string CatChildId { get { return this[_catChildId]; } set { this[_catChildId] = value; } }
-        public string ContextName { get; private set; }
+        public string ContextName { get; set; }
 
         public CatContext(string contextName = null)
         {
@@ -34,11 +32,6 @@ namespace PureCat.Context
         {
             foreach (var item in _dict)
                 yield return item;
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
         }
     }
 }

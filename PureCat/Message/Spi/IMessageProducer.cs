@@ -17,7 +17,7 @@ namespace PureCat.Message.Spi
         ///</summary>
         ///<param name="type"> event type </param>
         ///<param name="name"> event name </param>
-        ///<param name="status"> "0" means success, otherwise means error code </param>
+        ///<param name="status"> PureCatConstants.SUCCESS or "0" means success, otherwise means error code </param>
         ///<param name="nameValuePairs"> name value pairs in the format of "a=1&b=2&..." </param>
         void LogEvent(string type, string name, string status, string nameValuePairs);
 
@@ -26,7 +26,7 @@ namespace PureCat.Message.Spi
         ///</summary>
         ///<param name="type"> heartbeat type </param>
         ///<param name="name"> heartbeat name </param>
-        ///<param name="status"> "0" means success, otherwise means error code </param>
+        ///<param name="status"> PureCatConstants.SUCCESS or "0" means success, otherwise means error code </param>
         ///<param name="nameValuePairs"> name value pairs in the format of "a=1&b=2&..." </param>
         void LogHeartbeat(string type, string name, string status, string nameValuePairs);
 
@@ -34,7 +34,7 @@ namespace PureCat.Message.Spi
         /// Log a metric in one shot.
         /// </summary>
         /// <param name="name">metric name</param>
-        /// <param name="status">"0" means success, otherwise means error code</param>
+        /// <param name="status">PureCatConstants.SUCCESS or "0" means success, otherwise means error code</param>
         /// <param name="nameValuePairs">name value pairs in the format of "a=1&b=2&..."</param>
         void LogMetric(string name, string status, string nameValuePairs);
 
@@ -86,6 +86,7 @@ namespace PureCat.Message.Spi
         /// </summary>
         /// <param name="type">taggedTransaction type</param>
         /// <param name="name">taggedTransaction name</param>
+        /// <param name="tag">taggedTransaction tag</param>
         /// <returns></returns>
         ITaggedTransaction NewTaggedTransaction(string type, string name, string tag);
 
