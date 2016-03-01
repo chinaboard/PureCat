@@ -5,31 +5,26 @@
     /// </summary>
     public class Domain
     {
-        private string _id;
-        private bool _mEnabled;
-
-        public Domain(string id = null, bool enabled = true)
+        public Domain(string id = null, bool enabled = true, int maxQueueSize = 100000)
         {
-            _id = string.IsNullOrWhiteSpace(id) ? "Unknown" : id;
-            _mEnabled = enabled;
+            Id = string.IsNullOrWhiteSpace(id) ? "Unknown" : id;
+            Enabled = enabled;
+            MaxQueueSize = maxQueueSize > 100000 || maxQueueSize < 1000 ? 100000 : maxQueueSize;
         }
 
         /// <summary>
-        ///   当前系统的标识
+        /// 当前系统的标识
         /// </summary>
-        public string Id
-        {
-            get { return _id; }
-            set { _id = value; }
-        }
+        public string Id { get; set; }
 
         /// <summary>
-        ///   Cat日志是否开启，默认关闭
+        /// Cat日志是否开启，默认关闭
         /// </summary>
-        public bool Enabled
-        {
-            get { return _mEnabled; }
-            set { _mEnabled = value; }
-        }
+        public bool Enabled { get; set; }
+
+        /// <summary>
+        /// Cat本地消息队列最大长度，最大10W最小1000
+        /// </summary>
+        public int MaxQueueSize { get; set; }
     }
 }

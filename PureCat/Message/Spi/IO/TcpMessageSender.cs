@@ -30,6 +30,7 @@ namespace PureCat.Message.Spi.IO
             _connPool = new ConcurrentDictionary<Server, TcpClient>();
             _queue = new ConcurrentQueue<IMessageTree>();
             _codec = new PlainTextMessageCodec();
+            _maxQueueSize = clientConfig.Domain.MaxQueueSize;
         }
 
         #region IMessageSender Members

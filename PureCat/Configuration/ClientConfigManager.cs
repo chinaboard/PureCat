@@ -62,7 +62,6 @@ namespace PureCat.Configuration
                     var domain = BuildDomain(root.GetElementsByTagName("domain"));
                     var servers = BuildServers(root.GetElementsByTagName("servers")).Where(server => server.Enabled).ToList();
 
-
                     config.Domain = domain;
                     servers.ForEach(server =>
                     {
@@ -87,11 +86,7 @@ namespace PureCat.Configuration
             }
 
             XmlElement node = (XmlElement)nodes[0];
-            return new Domain
-            {
-                Id = GetStringProperty(node, "id", "Unknown"),
-                Enabled = GetBooleanProperty(node, "enabled", false)
-            };
+            return new Domain(GetStringProperty(node, "id", "Unknown"), GetBooleanProperty(node, "enabled", false), GetIntProperty(node, "queuesize", 100000));
         }
 
         private IEnumerable<Server> BuildServers(XmlNodeList nodes)

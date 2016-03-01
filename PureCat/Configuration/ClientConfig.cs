@@ -8,26 +8,20 @@ namespace PureCat.Configuration
     /// </summary>
     public class ClientConfig
     {
-        private Domain _mDomain;
-        private Random _mRandom = new Random();
+        private Random _random = new Random();
         private readonly object _lock = new object();
 
         private List<Server> _server = new List<Server>();
 
         public ClientConfig(Domain domain = null, params Server[] serverList)
         {
-            _mDomain = domain ?? new Domain();
+            Domain = domain ?? new Domain();
             if (serverList != null && serverList.Length != 0)
                 Servers.AddRange(serverList);
             RandomServer();
         }
 
-        public Domain Domain
-        {
-            get { return _mDomain ?? (_mDomain = new Domain()); }
-
-            set { _mDomain = value; }
-        }
+        public Domain Domain { get; set; }
 
         /// <summary>
         ///   Cat日志服务器，可以有多个
@@ -45,7 +39,7 @@ namespace PureCat.Configuration
                 for (int i = 0; i < _server.Count * 3; i++)
                 {
                     index = i % _server.Count;
-                    k = _mRandom.Next(_server.Count);
+                    k = _random.Next(_server.Count);
                     if (k != index)
                     {
                         tmpServer = _server[index];
