@@ -5,56 +5,49 @@ using PureCat.Util;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Threading;
+using System.Linq;
 using System.Collections.Concurrent;
 
 namespace PureCat.Message.Spi.IO
 {
     public class TcpMessageSender : IMessageSender
     {
-        private readonly ClientConfig _mClientConfig;
-        private readonly IMessageCodec _mCodec;
-        private readonly ConcurrentQueue<IMessageTree> _mQueue;
-        private readonly IMessageStatistics _mStatistics;
-        private bool _mActive;
-        private TcpClient _mActiveChannel;
-        private int _mActiveIndex;
-        private int _mErrors;
-        private TcpClient _mLastChannel;
+        private static Random _rand = new Random();
+
+        private readonly ClientConfig _clientConfig;
+        private readonly IMessageCodec _codec;
+        private readonly ConcurrentQueue<IMessageTree> _queue;
+        private readonly ConcurrentDictionary<Server, TcpClient> _connPool;
+        private readonly IMessageStatistics _statistics;
+        private int _errors;
+        private bool _active;
         private readonly int _maxQueueSize = 100000;
 
         public TcpMessageSender(ClientConfig clientConfig, IMessageStatistics statistics)
         {
-            _mClientConfig = clientConfig;
-            _mStatistics = statistics;
-            _mActive = true;
-            _mQueue = new ConcurrentQueue<IMessageTree>();
-            _mCodec = new PlainTextMessageCodec();
+            _clientConfig = clientConfig;
+            _statistics = statistics;
+            _connPool = new ConcurrentDictionary<Server, TcpClient>();
+            _queue = new ConcurrentQueue<IMessageTree>();
+            _codec = new PlainTextMessageCodec();
         }
 
         #region IMessageSender Members
 
         public virtual bool HasSendingMessage
         {
-            get { return _mQueue.Count > 0; }
+            get { return _queue.Count > 0; }
         }
 
         public void Initialize()
         {
-            int len = _mClientConfig.Servers.Count;
-
-            for (int i = 0; i < len; i++)
+            _clientConfig.Servers.ForEach(server =>
             {
-                TcpClient channel = CreateChannel(i);
+                _connPool[server] = CreateChannel(server);
+            });
 
-                if (channel != null)
-                {
-                    _mActiveChannel = channel;
-                    _mActiveIndex = i;
-                    break;
-                }
-            }
+            _active = true;
 
-            //TODO:连接管理做好
             ThreadPool.QueueUserWorkItem(ChannelManagementTask);
             ThreadPool.QueueUserWorkItem(AsynchronousSendTask);
 
@@ -64,25 +57,25 @@ namespace PureCat.Message.Spi.IO
 
         public void Send(IMessageTree tree)
         {
-            lock (_mQueue)
+            lock (_queue)
             {
-                if (_mQueue.Count < _maxQueueSize)
+                if (_queue.Count < _maxQueueSize)
                 {
-                    _mQueue.Enqueue(tree);
+                    _queue.Enqueue(tree);
                 }
                 else
                 {
                     // throw it away since the queue is full
-                    _mErrors++;
+                    _errors++;
 
-                    if (_mStatistics != null)
+                    if (_statistics != null)
                     {
-                        _mStatistics.OnOverflowed(tree);
+                        _statistics.OnOverflowed(tree);
                     }
 
-                    if (_mErrors % 100 == 0)
+                    if (_errors % 100 == 0)
                     {
-                        Logger.Warn("Can't send message to cat-server due to queue's full! Count: " + _mErrors);
+                        Logger.Warn("Can't send message to cat-server due to queue's full! Count: " + _errors);
                     }
                 }
             }
@@ -90,14 +83,9 @@ namespace PureCat.Message.Spi.IO
 
         public void Shutdown()
         {
-            _mActive = false;
-
             try
             {
-                if (_mActiveChannel != null && _mActiveChannel.Connected)
-                {
-                    _mActiveChannel.Close();
-                }
+                _active = false;
             }
             catch
             {
@@ -111,29 +99,14 @@ namespace PureCat.Message.Spi.IO
         {
             while (true)
             {
-                if (_mActive)
+                if (_active)
                 {
-                    if (_mActiveChannel == null || !_mActiveChannel.Connected)
+                    _connPool.ToList().ForEach(kvp =>
                     {
-                        if (_mActiveChannel != null)
-                            Logger.Warn("ChannelManagementTask中，Socket关闭");
-                        _mActiveIndex = _mClientConfig.Servers.Count;
-                    }
-
-                    for (int i = 0; i < _mActiveIndex; i++)
-                    {
-                        TcpClient channel = CreateChannel(i);
-
-                        if (channel != null)
-                        {
-                            _mLastChannel = _mActiveChannel;
-                            _mActiveChannel = channel;
-                            _mActiveIndex = i;
-                            break;
-                        }
-                    }
+                        if (!kvp.Value.Connected)
+                            _connPool[kvp.Key] = CreateChannel(kvp.Key);
+                    });
                 }
-
                 Thread.Sleep(5 * 1000); // every 2 seconds
             }
         }
@@ -142,21 +115,21 @@ namespace PureCat.Message.Spi.IO
         {
             while (true)
             {
-                if (_mActive)
+                if (_active)
                 {
-                    while (_mQueue.Count == 0 || _mActiveChannel == null || !_mActiveChannel.Connected)
+                    var activeChannel = _connPool.ToList()[_rand.Next(_clientConfig.Servers.Count)].Value;
+
+                    while (_queue.Count == 0 || !activeChannel.Connected)
                     {
-                        if (_mActiveChannel != null && !_mActiveChannel.Connected)
-                            Logger.Warn("AsynchronousSendTask中，Socket关闭");
                         Thread.Sleep(500);
                     }
 
                     IMessageTree tree = null;
-                    _mQueue.TryDequeue(out tree);
+                    _queue.TryDequeue(out tree);
 
                     try
                     {
-                        SendInternal(tree);
+                        SendInternal(tree, activeChannel);
                         if (tree != null) tree.Message = null;
                     }
                     catch (Exception t)
@@ -171,36 +144,22 @@ namespace PureCat.Message.Spi.IO
             }
         }
 
-        private void SendInternal(IMessageTree tree)
+        private void SendInternal(IMessageTree tree, TcpClient activeChannel)
         {
-            if (_mLastChannel != null)
-            {
-                try
-                {
-                    Logger.Warn("SendInternal中，_mLastChannel关闭");
-                    _mLastChannel.Close();
-                }
-                catch
-                {
-                    // ignore it
-                }
 
-                _mLastChannel = null;
-            }
-
-            if (_mActiveChannel != null && _mActiveChannel.Connected)
+            if (activeChannel != null && activeChannel.Connected)
             {
                 ChannelBuffer buf = new ChannelBuffer(8192);
 
-                _mCodec.Encode(tree, buf);
+                _codec.Encode(tree, buf);
 
                 byte[] data = buf.ToArray();
 
-                _mActiveChannel.Client.Send(data);
+                activeChannel.Client.Send(data);
 
-                if (_mStatistics != null)
+                if (_statistics != null)
                 {
-                    _mStatistics.OnBytes(data.Length);
+                    _statistics.OnBytes(data.Length);
                 }
             }
             else
@@ -209,10 +168,8 @@ namespace PureCat.Message.Spi.IO
             }
         }
 
-        private TcpClient CreateChannel(int index)
+        private TcpClient CreateChannel(Server server)
         {
-            Server server = _mClientConfig.Servers[index];
-
             if (!server.Enabled)
             {
                 return null;
