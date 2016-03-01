@@ -14,6 +14,8 @@ namespace PureCat
         private static readonly PureCat _instance = null;
         private static readonly object _lock = new object();
 
+        public static string Version { get { return $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Version}"; } }
+
         public bool Initialized { get; private set; } = false;
 
         public IMessageManager MessageManager { get; private set; }
@@ -38,7 +40,7 @@ namespace PureCat
         {
             if (_instance.Initialized)
                 return;
-            Logger.Info($"Initializing Cat .Net Client ...Cat.Version : {System.Reflection.Assembly.GetExecutingAssembly().GetName().Version}");
+            Logger.Info($"Initializing Cat .Net Client ...Cat.Version : {PureCat.Version}");
             var configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "CatConfig.xml");
             ClientConfigManager configManager = new ClientConfigManager(configPath);
             DefaultMessageManager manager = new DefaultMessageManager();
