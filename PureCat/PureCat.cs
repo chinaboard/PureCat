@@ -5,6 +5,7 @@ using PureCat.Message.Spi;
 using PureCat.Message.Spi.Internals;
 using PureCat.Util;
 using System;
+using System.IO;
 
 namespace PureCat
 {
@@ -38,8 +39,8 @@ namespace PureCat
             if (_instance.Initialized)
                 return;
             Logger.Info($"Initializing Cat .Net Client ...Cat.Version : {System.Reflection.Assembly.GetExecutingAssembly().GetName().Version}");
-
-            ClientConfigManager configManager = new ClientConfigManager("CatConfig.xml");
+            var configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "CatConfig.xml");
+            ClientConfigManager configManager = new ClientConfigManager(configPath);
             DefaultMessageManager manager = new DefaultMessageManager();
 
             manager.InitializeClient(configManager.ClientConfig);

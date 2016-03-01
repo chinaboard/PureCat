@@ -15,7 +15,7 @@ namespace PureCat.Context
         public string CatRootId { get { return this[_catRootId]; } set { this[_catRootId] = value; } }
         public string CatParentId { get { return this[_catParentId]; } set { this[_catParentId] = value; } }
         public string CatChildId { get { return this[_catChildId]; } set { this[_catChildId] = value; } }
-        public string ContextName { get; private set; }
+        public string ContextName { get; set; }
 
         public CatContext(string contextName = null)
         {
