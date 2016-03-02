@@ -19,6 +19,7 @@ namespace PureCat.Message.Spi.IO
         private readonly ConcurrentQueue<IMessageTree> _queue;
         private readonly ConcurrentDictionary<Server, TcpClient> _connPool;
         private readonly IMessageStatistics _statistics;
+        private TcpClient _activeChannel;
         private int _errors;
         private bool _active;
         private readonly int _maxQueueSize = 100000;
@@ -107,6 +108,7 @@ namespace PureCat.Message.Spi.IO
                         if (!kvp.Value.Connected)
                             _connPool[kvp.Key] = CreateChannel(kvp.Key);
                     });
+                    Interlocked.Exchange(ref _activeChannel, _connPool.ToList()[_rand.Next(_clientConfig.Servers.Count)].Value);
                 }
                 Thread.Sleep(5 * 1000); // every 2 seconds
             }
@@ -118,9 +120,9 @@ namespace PureCat.Message.Spi.IO
             {
                 if (_active)
                 {
-                    var activeChannel = _connPool.ToList()[_rand.Next(_clientConfig.Servers.Count)].Value;
+                    var activeChannel = Interlocked.CompareExchange(ref _activeChannel, null, null);
 
-                    while (_queue.Count == 0 || !activeChannel.Connected)
+                    while (_queue.Count == 0 || activeChannel == null || !activeChannel.Connected)
                     {
                         Thread.Sleep(500);
                     }
