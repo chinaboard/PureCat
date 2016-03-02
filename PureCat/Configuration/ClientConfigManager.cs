@@ -101,8 +101,10 @@ namespace PureCat.Configuration
                     XmlElement serverNode = (XmlElement)node;
                     var ip = GetStringProperty(serverNode, "ip", "localhost");
                     var port = GetIntProperty(serverNode, "port", 2280);
-                    var webport = GetIntProperty(serverNode, "webport", 8080);
-                    var server = new Server(ip, port) { Enabled = GetBooleanProperty(serverNode, "enabled", true) };
+                    var httpport = GetIntProperty(serverNode, "http-port", 8080);
+                    var enabled = GetBooleanProperty(serverNode, "enabled", true);
+
+                    var server = new Server(ip, port, httpport, enabled);
 
                     servers.Add(server);
                 }

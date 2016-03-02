@@ -103,7 +103,7 @@ namespace PureCat.Configuration
             var serverList = _server.Where(server => server.Enabled);
             foreach (var server in serverList)
             {
-                return $"http://{server.Ip}:{(webPort > 0 ? webPort : server.WebPort)}/cat/s/router?domain={Domain.Id ?? "cat"}";
+                return $"http://{server.Ip}:{(webPort > 0 ? webPort : server.HttpPort)}/cat/s/router?domain={Domain.Id ?? "cat"}";
             }
             return null;
         }

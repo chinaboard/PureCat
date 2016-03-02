@@ -7,10 +7,12 @@ namespace PureCat.Configuration
     /// </summary>
     public class Server
     {
-        public Server(string ip, int port = 2280)
+        public Server(string ip, int port = 2280, int httpPort = 8080, bool enabled = true)
         {
             Ip = ip;
             Port = port;
+            HttpPort = httpPort;
+            Enabled = enabled;
         }
 
         /// <summary>
@@ -26,12 +28,12 @@ namespace PureCat.Configuration
         /// <summary>
         /// Cat服务http端口
         /// </summary>
-        public int WebPort { get; private set; } = 8080;
+        public int HttpPort { get; private set; } = 8080;
 
         /// <summary>
         /// Cat服务器是否有效，默认有效
         /// </summary>
-        public bool Enabled { get; set; } = true;
+        public bool Enabled { get; private set; } = true;
 
         public override bool Equals(object obj)
         {
@@ -63,7 +65,7 @@ namespace PureCat.Configuration
             result = 37 * result + ret;
             ret = Port;
             result = 37 * result + ret;
-            ret = WebPort;
+            ret = HttpPort;
             result = 37 * result + ret;
             ret = Ip.GetHashCode();
             result = 37 * result + ret;

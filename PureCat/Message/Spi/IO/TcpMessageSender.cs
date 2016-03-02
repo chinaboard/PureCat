@@ -106,8 +106,6 @@ namespace PureCat.Message.Spi.IO
                         if (!_connPool.ContainsKey(server))
                             _connPool.GetOrAdd(server, CreateChannel(server));
                     });
-                    _connPool.ToList().ForEach(kvp => Console.WriteLine(kvp.Key.GetHashCode()));
-                    Console.WriteLine();
                 }
                 Thread.Sleep(5 * 1000); // every 60 seconds
             }
