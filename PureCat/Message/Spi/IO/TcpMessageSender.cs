@@ -107,7 +107,7 @@ namespace PureCat.Message.Spi.IO
                             _connPool.GetOrAdd(server, CreateChannel(server));
                     });
                 }
-                Thread.Sleep(5 * 1000); // every 60 seconds
+                Thread.Sleep(60 * 1000); // every 60 seconds
             }
         }
 
