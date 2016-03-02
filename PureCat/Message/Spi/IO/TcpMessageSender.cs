@@ -20,7 +20,7 @@ namespace PureCat.Message.Spi.IO
         private readonly ConcurrentDictionary<Server, TcpClient> _connPool;
         private readonly IMessageStatistics _statistics;
         private TcpClient _activeChannel;
-        private int _errors;
+        private long _errors;
         private bool _active;
         private readonly int _maxQueueSize = 100000;
 
@@ -43,16 +43,13 @@ namespace PureCat.Message.Spi.IO
 
         public void Initialize()
         {
-            _clientConfig.Servers.ForEach(server =>
-            {
-                _connPool[server] = CreateChannel(server);
-            });
-
             _active = true;
 
+            ThreadPool.QueueUserWorkItem(ServerManagementTask);
             ThreadPool.QueueUserWorkItem(ChannelManagementTask);
             ThreadPool.QueueUserWorkItem(AsynchronousSendTask);
 
+            Logger.Info("Thread(TcpMessageSender-ServerManagementTask) started.");
             Logger.Info("Thread(TcpMessageSender-ChannelManagementTask) started.");
             Logger.Info("Thread(TcpMessageSender-AsynchronousSendTask) started.");
         }
@@ -68,16 +65,16 @@ namespace PureCat.Message.Spi.IO
                 else
                 {
                     // throw it away since the queue is full
-                    _errors++;
+                    Interlocked.Increment(ref _errors);
 
                     if (_statistics != null)
                     {
                         _statistics.OnOverflowed(tree);
                     }
 
-                    if (_errors % 100 == 0)
+                    if (Interlocked.Read(ref _errors) % 100 == 0)
                     {
-                        Logger.Warn("Can't send message to cat-server due to queue's full! Count: " + _errors);
+                        Logger.Warn("Can't send message to cat-server due to queue's full! Count: " + Interlocked.Read(ref _errors));
                     }
                 }
             }
@@ -97,20 +94,48 @@ namespace PureCat.Message.Spi.IO
 
         #endregion
 
+        public void ServerManagementTask(object o)
+        {
+            while (true)
+            {
+                if (_active)
+                {
+                    _clientConfig.Initialize();
+                    _clientConfig.Servers.ForEach(server =>
+                    {
+                        if (!_connPool.ContainsKey(server))
+                            _connPool.GetOrAdd(server, CreateChannel(server));
+                    });
+                    _connPool.ToList().ForEach(kvp => Console.WriteLine(kvp.Key.GetHashCode()));
+                    Console.WriteLine();
+                }
+                Thread.Sleep(5 * 1000); // every 60 seconds
+            }
+        }
+
         public void ChannelManagementTask(object o)
         {
             while (true)
             {
                 if (_active)
                 {
-                    _connPool.ToList().ForEach(kvp =>
+                    var connPoolList = _connPool.ToList();
+                    connPoolList.ForEach(kvp =>
                     {
                         if (!kvp.Value.Connected)
                             _connPool[kvp.Key] = CreateChannel(kvp.Key);
                     });
-                    Interlocked.Exchange(ref _activeChannel, _connPool.ToList()[_rand.Next(_clientConfig.Servers.Count)].Value);
+
+                    try
+                    {
+                        Interlocked.Exchange(ref _activeChannel, connPoolList[_rand.Next(connPoolList.Count)].Value);
+                    }
+                    catch
+                    {
+                        //pass
+                    }
                 }
-                Thread.Sleep(5 * 1000); // every 2 seconds
+                Thread.Sleep(5 * 1000); // every 5 seconds
             }
         }
 
@@ -152,11 +177,11 @@ namespace PureCat.Message.Spi.IO
 
             if (activeChannel != null && activeChannel.Connected)
             {
-                ChannelBuffer buf = new ChannelBuffer(8192);
+                var buf = new ChannelBuffer(8192);
 
                 _codec.Encode(tree, buf);
 
-                byte[] data = buf.ToArray();
+                var data = buf.ToArray();
 
                 activeChannel.Client.Send(data);
 
@@ -178,13 +203,10 @@ namespace PureCat.Message.Spi.IO
                 return null;
             }
 
-            TcpClient socket = new TcpClient();
+            var socket = new TcpClient() { NoDelay = true, ReceiveTimeout = 2000 };
 
-            socket.NoDelay = true;
-            socket.ReceiveTimeout = 2 * 1000; // 2 seconds
-
-            string ip = server.Ip;
-            int port = server.Port;
+            var ip = server.Ip;
+            var port = server.Port;
 
             Logger.Info("Connecting to server({0}:{1}) ...", ip, port);
 
@@ -202,12 +224,7 @@ namespace PureCat.Message.Spi.IO
             }
             catch (Exception e)
             {
-                Logger.Error(
-                    "Failed to connect to server({0}:{1}). Error: {2}.",
-                    ip,
-                    port,
-                    e.Message
-                    );
+                Logger.Error("Failed to connect to server({0}:{1}). Error: {2}.", ip, port, e.Message);
             }
 
             return null;

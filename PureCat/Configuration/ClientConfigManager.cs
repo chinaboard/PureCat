@@ -29,12 +29,10 @@ namespace PureCat.Configuration
             if (clientConfig != null)
             {
                 ClientConfig = clientConfig;
-                LoadServerConfig();
-                ClientConfig.RandomServer();
             }
             else
             {
-                Logger.Warn($"ClientConfig is null.");
+                Logger.Warn("ClientConfig is null.");
             }
         }
         private void Initialize(string configPath)
@@ -52,7 +50,7 @@ namespace PureCat.Configuration
         }
         private void Initialize(XmlDocument configXml)
         {
-            var config = new ClientConfig();
+            var clientConfig = new ClientConfig();
             if (configXml != null)
             {
                 var root = configXml.DocumentElement;
@@ -62,10 +60,10 @@ namespace PureCat.Configuration
                     var domain = BuildDomain(root.GetElementsByTagName("domain"));
                     var servers = BuildServers(root.GetElementsByTagName("servers")).Where(server => server.Enabled).ToList();
 
-                    config.Domain = domain;
+                    clientConfig.Domain = domain;
                     servers.ForEach(server =>
                     {
-                        config.Servers.Add(server);
+                        clientConfig.Servers.Add(server);
                         Logger.Info("Cat server configured: {0}:{1}", server.Ip, server.Port);
                     });
                 }
@@ -74,7 +72,7 @@ namespace PureCat.Configuration
             {
                 Logger.Warn($"configXml is null.");
             }
-            Initialize(config);
+            Initialize(clientConfig);
         }
 
 
@@ -164,57 +162,6 @@ namespace PureCat.Configuration
             }
 
             return defaultValue;
-        }
-
-        private string GetServerConfigUrl(int webPort = -1)
-        {
-            if (ClientConfig == null)
-                return null;
-            var serverList = ClientConfig.Servers.Where(server => server.Enabled);
-            foreach (var server in serverList)
-            {
-                return $"http://{server.Ip}:{(webPort > 0 ? webPort : server.WebPort)}/cat/s/router?domain={ClientConfig.Domain.Id}";
-            }
-            return null;
-        }
-
-        private void LoadServerConfig()
-        {
-            var serverListContent = CatHttpRequest.GetRequest(GetServerConfigUrl());
-            if (string.IsNullOrWhiteSpace(serverListContent))
-            {
-                serverListContent = CatHttpRequest.GetRequest(GetServerConfigUrl(9005));
-            }
-            if (string.IsNullOrWhiteSpace(serverListContent))
-            {
-                return;
-            }
-
-            Logger.Info($"Get servers : {serverListContent}");
-
-
-            var serverListSplit = serverListContent.TrimEnd(';').Split(';');
-
-            List<Server> serverList = new List<Server>();
-
-            foreach (var serverContent in serverListSplit)
-            {
-                try
-                {
-                    var content = serverContent.Split(':');
-                    var ip = content[0];
-                    var port = content[1];
-                    serverList.Add(new Server(ip, int.Parse(port)));
-                }
-                catch
-                {
-                }
-            }
-
-            if (serverList.Count > 0)
-            {
-                ClientConfig.Servers = serverList;
-            }
         }
     }
 }
