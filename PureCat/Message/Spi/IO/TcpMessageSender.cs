@@ -49,9 +49,9 @@ namespace PureCat.Message.Spi.IO
             ThreadPool.QueueUserWorkItem(ChannelManagementTask);
             ThreadPool.QueueUserWorkItem(AsynchronousSendTask);
 
-            Logger.Info("Thread(TcpMessageSender-ServerManagementTask) started.");
-            Logger.Info("Thread(TcpMessageSender-ChannelManagementTask) started.");
-            Logger.Info("Thread(TcpMessageSender-AsynchronousSendTask) started.");
+            Logger.Info("Thread(ServerManagementTask) started.");
+            Logger.Info("Thread(ChannelManagementTask) started.");
+            Logger.Info("Thread(AsynchronousSendTask) started.");
         }
 
         public void Send(IMessageTree tree)
@@ -124,13 +124,9 @@ namespace PureCat.Message.Spi.IO
                             _connPool[kvp.Key] = CreateChannel(kvp.Key);
                     });
 
-                    try
+                    if (connPoolList.Count > 0)
                     {
                         Interlocked.Exchange(ref _activeChannel, connPoolList[_rand.Next(connPoolList.Count)].Value);
-                    }
-                    catch
-                    {
-                        //pass
                     }
                 }
                 Thread.Sleep(5 * 1000); // every 5 seconds
@@ -144,10 +140,10 @@ namespace PureCat.Message.Spi.IO
                 if (_active)
                 {
                     var activeChannel = Interlocked.CompareExchange(ref _activeChannel, null, null);
-
                     while (_queue.Count == 0 || activeChannel == null || !activeChannel.Connected)
                     {
                         Thread.Sleep(500);
+                        activeChannel = Interlocked.CompareExchange(ref _activeChannel, null, null);
                     }
 
                     IMessageTree tree = null;

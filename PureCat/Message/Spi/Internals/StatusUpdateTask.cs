@@ -10,11 +10,11 @@ namespace PureCat.Message.Spi.Internals
     {
         internal readonly NodeStatusInfo _nodeInfo = null;
 
-        public StatusUpdateTask(IMessageStatistics mStatistics)
+        public StatusUpdateTask(IMessageStatistics statistics)
         {
             try
             {
-                _nodeInfo = new NodeStatusInfo(mStatistics);
+                _nodeInfo = new NodeStatusInfo(statistics);
                 _nodeInfo.HeartbeatExtensions.Add(new CpuInfo());
                 _nodeInfo.HeartbeatExtensions.Add(new NetworkIO());
                 _nodeInfo.HeartbeatExtensions.Add(new DiskIO());
