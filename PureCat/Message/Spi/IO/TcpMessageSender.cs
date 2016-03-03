@@ -19,7 +19,6 @@ namespace PureCat.Message.Spi.IO
         private readonly ConcurrentQueue<IMessageTree> _queue;
         private readonly ConcurrentDictionary<Server, TcpClient> _connPool;
         private readonly IMessageStatistics _statistics;
-        private TcpClient _activeChannel;
         private long _errors;
         private bool _active;
         private readonly int _maxQueueSize = 100000;
@@ -47,11 +46,14 @@ namespace PureCat.Message.Spi.IO
 
             ThreadPool.QueueUserWorkItem(ServerManagementTask);
             ThreadPool.QueueUserWorkItem(ChannelManagementTask);
-            ThreadPool.QueueUserWorkItem(AsynchronousSendTask);
+            for (int i = 0; i < Environment.ProcessorCount; i++)
+            {
+                ThreadPool.QueueUserWorkItem(AsynchronousSendTask);
+                Logger.Info($"Thread(AsynchronousSendTask-{i}) started.");
+            }
 
             Logger.Info("Thread(ServerManagementTask) started.");
             Logger.Info("Thread(ChannelManagementTask) started.");
-            Logger.Info("Thread(AsynchronousSendTask) started.");
         }
 
         public void Send(IMessageTree tree)
@@ -124,10 +126,6 @@ namespace PureCat.Message.Spi.IO
                             _connPool[kvp.Key] = CreateChannel(kvp.Key);
                     });
 
-                    if (connPoolList.Count > 0)
-                    {
-                        Interlocked.Exchange(ref _activeChannel, connPoolList[_rand.Next(connPoolList.Count)].Value);
-                    }
                 }
                 Thread.Sleep(5 * 1000); // every 5 seconds
             }
@@ -139,20 +137,34 @@ namespace PureCat.Message.Spi.IO
             {
                 if (_active)
                 {
-                    var activeChannel = Interlocked.CompareExchange(ref _activeChannel, null, null);
-                    while (_queue.Count == 0 || activeChannel == null || !activeChannel.Connected)
-                    {
-                        Thread.Sleep(500);
-                        activeChannel = Interlocked.CompareExchange(ref _activeChannel, null, null);
-                    }
-
-                    IMessageTree tree = null;
-                    _queue.TryDequeue(out tree);
-
                     try
                     {
-                        SendInternal(tree, activeChannel);
-                        if (tree != null) tree.Message = null;
+                        TcpClient activeChannel = null;
+                        var connPoolList = _connPool.ToList();
+
+                        if (connPoolList.Count != 0)
+                        {
+                            Interlocked.Exchange(ref activeChannel, connPoolList[_rand.Next(connPoolList.Count)].Value);
+                        }
+                        else
+                        {
+                            Thread.Sleep(100);
+                            continue;
+                        }
+                        while (_queue.Count == 0 || activeChannel == null || !activeChannel.Connected)
+                        {
+                            Thread.Sleep(500);
+                            Interlocked.Exchange(ref activeChannel, connPoolList[_rand.Next(connPoolList.Count)].Value);
+                        }
+
+                        IMessageTree tree = null;
+
+                        if (_queue.TryDequeue(out tree))
+                        {
+
+                            SendInternal(tree, activeChannel);
+                            if (tree != null) tree.Message = null;
+                        }
                     }
                     catch (Exception t)
                     {
