@@ -48,7 +48,7 @@ namespace PureCat.Message.Spi.IO
             ThreadPool.QueueUserWorkItem(ChannelManagementTask);
             for (int i = 0; i < Environment.ProcessorCount; i++)
             {
-                ThreadPool.QueueUserWorkItem(AsynchronousSendTask);
+                ThreadPool.QueueUserWorkItem(AsynchronousSendTask, i);
                 Logger.Info($"Thread(AsynchronousSendTask-{i}) started.");
             }
 
@@ -131,8 +131,9 @@ namespace PureCat.Message.Spi.IO
             }
         }
 
-        public void AsynchronousSendTask(object o)
+        public void AsynchronousSendTask(object state)
         {
+            var i = (int)state;
             while (true)
             {
                 if (_active)
@@ -144,7 +145,7 @@ namespace PureCat.Message.Spi.IO
 
                         if (connPoolList.Count != 0)
                         {
-                            Interlocked.Exchange(ref activeChannel, connPoolList[_rand.Next(connPoolList.Count)].Value);
+                            Interlocked.Exchange(ref activeChannel, connPoolList[i % connPoolList.Count].Value);
                         }
                         else
                         {
@@ -154,7 +155,7 @@ namespace PureCat.Message.Spi.IO
                         while (_queue.Count == 0 || activeChannel == null || !activeChannel.Connected)
                         {
                             Thread.Sleep(500);
-                            Interlocked.Exchange(ref activeChannel, connPoolList[_rand.Next(connPoolList.Count)].Value);
+                            Interlocked.Exchange(ref activeChannel, connPoolList[i % connPoolList.Count].Value);
                         }
 
                         IMessageTree tree = null;
