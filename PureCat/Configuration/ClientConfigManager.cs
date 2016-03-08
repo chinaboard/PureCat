@@ -84,7 +84,10 @@ namespace PureCat.Configuration
             }
 
             XmlElement node = (XmlElement)nodes[0];
-            return new Domain(GetStringProperty(node, "id", "Unknown"), GetBooleanProperty(node, "enabled", false), GetIntProperty(node, "queuesize", 100000));
+            return new Domain(GetStringProperty(node, "id", "Unknown"),
+                GetBooleanProperty(node, "enabled", false),
+                GetIntProperty(node, "queuesize", 100000),
+                GetIntProperty(node, "pool", 1));
         }
 
         private IEnumerable<Server> BuildServers(XmlNodeList nodes)

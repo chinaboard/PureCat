@@ -45,15 +45,16 @@ namespace PureCat.Message.Spi.IO
             _active = true;
 
             ThreadPool.QueueUserWorkItem(ServerManagementTask);
+            Logger.Info("Thread(ServerManagementTask) started.");
+
             ThreadPool.QueueUserWorkItem(ChannelManagementTask);
-            for (int i = 0; i < Environment.ProcessorCount; i++)
+            Logger.Info("Thread(ChannelManagementTask) started.");
+
+            for (int i = 0; i < _clientConfig.Domain.ThreadPool; i++)
             {
                 ThreadPool.QueueUserWorkItem(AsynchronousSendTask, i);
                 Logger.Info($"Thread(AsynchronousSendTask-{i}) started.");
             }
-
-            Logger.Info("Thread(ServerManagementTask) started.");
-            Logger.Info("Thread(ChannelManagementTask) started.");
         }
 
         public void Send(IMessageTree tree)
