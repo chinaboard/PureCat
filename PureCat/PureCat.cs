@@ -11,6 +11,8 @@ namespace PureCat
 {
     public class PureCat
     {
+
+        #region Other
         private static readonly PureCat _instance = null;
         private static readonly object _lock = new object();
 
@@ -21,6 +23,51 @@ namespace PureCat
         public IMessageManager MessageManager { get; private set; }
 
         public IMessageProducer MessageProducer { get; private set; }
+
+        public static IMessageManager GetManager()
+        {
+            return _instance.MessageManager;
+        }
+
+        public static IMessageProducer GetProducer()
+        {
+            return _instance.MessageProducer;
+        }
+
+        public static string GetCurrentMessageId()
+        {
+            var tree = GetManager().ThreadLocalMessageTree;
+            if (tree != null)
+            {
+                if (tree.MessageId == null)
+                {
+                    tree.MessageId = CreateMessageId();
+                }
+                return tree.MessageId;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        public static string CreateMessageId()
+        {
+            return GetProducer().CreateMessageId();
+        }
+
+        public static bool IsInitialized()
+        {
+            bool isInitialized = _instance.Initialized;
+            if (isInitialized && !_instance.MessageManager.HasContext())
+            {
+                _instance.MessageManager.Setup();
+            }
+            return isInitialized;
+        }
+        #endregion
+
+        #region Initialize
 
         static PureCat()
         {
@@ -67,26 +114,9 @@ namespace PureCat
             Logger.Info("Cat .Net Client initialized.");
         }
 
-        public static IMessageManager GetManager()
-        {
-            return _instance.MessageManager;
-        }
+        #endregion
 
-        public static IMessageProducer GetProducer()
-        {
-            return _instance.MessageProducer;
-        }
-
-        public static bool IsInitialized()
-        {
-            bool isInitialized = _instance.Initialized;
-            if (isInitialized && !_instance.MessageManager.HasContext())
-            {
-                _instance.MessageManager.Setup();
-            }
-            return isInitialized;
-        }
-
+        #region DoTransaction
         /// <summary>
         /// 执行事务
         /// </summary>
@@ -161,55 +191,9 @@ namespace PureCat
                 tran.Complete();
             }
         }
+        #endregion
 
-
-        public static ITaggedTransaction NewTaggedTransaction(string type, string name, string tag)
-        {
-            return GetProducer().NewTaggedTransaction(type, name, tag);
-        }
-
-        public static IForkedTransaction NewForkedTransaction(string type, string name)
-        {
-            return GetProducer().NewForkedTransaction(type, name);
-        }
-
-        public static ITransaction NewTransaction(string type, string name)
-        {
-            return GetProducer().NewTransaction(type, name);
-        }
-
-        public static IEvent NewEvent(string type, string name)
-        {
-            return GetProducer().NewEvent(type, name);
-        }
-
-        public static ITrace NewTrace(string type, string name)
-        {
-            return GetProducer().NewTrace(type, name);
-        }
-
-        public static string GetCurrentMessageId()
-        {
-            var tree = GetManager().ThreadLocalMessageTree;
-            if (tree != null)
-            {
-                if (tree.MessageId == null)
-                {
-                    tree.MessageId = CreateMessageId();
-                }
-                return tree.MessageId;
-            }
-            else
-            {
-                return null;
-            }
-        }
-
-        public static string CreateMessageId()
-        {
-            return GetProducer().CreateMessageId();
-        }
-
+        #region LogView
         /// <summary>
         /// 客户端创建请求上下文
         /// </summary>
@@ -273,11 +257,17 @@ namespace PureCat
                 tree.RootMessageId = rootId;
             }
         }
+        #endregion
 
-
+        #region LogEvent
         public static void LogEvent(string type, string name, string status = PureCatConstants.SUCCESS, string nameValuePairs = null)
         {
             GetProducer().LogEvent(type, name, status, nameValuePairs);
+        }
+
+        public static void LogTrace(string type, string name, string status = PureCatConstants.SUCCESS, string nameValuePairs = null)
+        {
+            GetProducer().LogTrace(type, name, status, nameValuePairs);
         }
 
         public static void LogHeartbeat(string type, string name, string status = PureCatConstants.SUCCESS, string nameValuePairs = null)
@@ -289,6 +279,43 @@ namespace PureCat
         {
             GetProducer().LogError(ex);
         }
+        #endregion
+
+        #region New
+
+        public static IEvent NewEvent(string type, string name)
+        {
+            return GetProducer().NewEvent(type, name);
+        }
+
+        public static ITrace NewTrace(string type, string name)
+        {
+            return GetProducer().NewTrace(type, name);
+        }
+
+        public static IHeartbeat NewHeartbeat(string type, string name)
+        {
+            return GetProducer().NewHeartbeat(type, name);
+        }
+
+        public static ITransaction NewTransaction(string type, string name)
+        {
+            return GetProducer().NewTransaction(type, name);
+        }
+
+        public static ITaggedTransaction NewTaggedTransaction(string type, string name, string tag)
+        {
+            return GetProducer().NewTaggedTransaction(type, name, tag);
+        }
+
+        public static IForkedTransaction NewForkedTransaction(string type, string name)
+        {
+            return GetProducer().NewForkedTransaction(type, name);
+        }
+
+        #endregion
+
+        #region Metric
 
         public static void LogMetricForCount(string name, int count = 1)
         {
@@ -314,6 +341,8 @@ namespace PureCat
         {
             GetProducer().LogMetric(name, status, keyValuePairs);
         }
+
+        #endregion
 
     }
 }

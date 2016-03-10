@@ -2,8 +2,12 @@
 {
     public class PureCatConstants
     {
-
+        #region status
         public const string SUCCESS = "0";
+
+        public const string ERROR = "ERROR";
+        #endregion
+
 
         public const int MAX_LENGTH = 1000;
 

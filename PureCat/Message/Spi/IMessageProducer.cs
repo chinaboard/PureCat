@@ -22,6 +22,15 @@ namespace PureCat.Message.Spi
         void LogEvent(string type, string name, string status, string nameValuePairs);
 
         ///<summary>
+        ///  Log an trace in one shot.
+        ///</summary>
+        ///<param name="type"> trace type </param>
+        ///<param name="name"> trace name </param>
+        ///<param name="status"> PureCatConstants.SUCCESS or "0" means success, otherwise means error code </param>
+        ///<param name="nameValuePairs"> name value pairs in the format of "a=1&b=2&..." </param>
+        void LogTrace(string type, string name, string status, string nameValuePairs);
+
+        ///<summary>
         ///  Log a heartbeat in one shot.
         ///</summary>
         ///<param name="type"> heartbeat type </param>

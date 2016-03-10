@@ -48,8 +48,20 @@ namespace PureCat.Message.Spi.Internals
             {
             }
 
-            LogEvent("Error", cause.GetType().FullName, "ERROR",
-                     writer.ToString());
+            LogEvent(PureCatConstants.TYPE_ERROR, cause.GetType().FullName, PureCatConstants.ERROR, writer.ToString());
+        }
+
+        public virtual void LogTrace(string type, string name, string status, string nameValuePairs)
+        {
+            ITrace trace = NewTrace(type, name);
+
+            if (!string.IsNullOrEmpty(nameValuePairs))
+            {
+                trace.AddData(nameValuePairs);
+            }
+
+            trace.Status = status;
+            trace.Complete();
         }
 
         public virtual void LogEvent(string type, string name, string status, string nameValuePairs)
@@ -108,6 +120,42 @@ namespace PureCat.Message.Spi.Internals
             return NullMessage.EVENT;
         }
 
+        public virtual ITrace NewTrace(string type, string name)
+        {
+            // this enable CAT client logging cat message without explicit setup
+            if (!_mManager.HasContext())
+            {
+                _mManager.Setup();
+            }
+
+            if (_mManager.CatEnabled)
+            {
+                ITrace trace = new DefaultTrace(type, name);
+
+                _mManager.Add(trace);
+                return trace;
+            }
+            return NullMessage.TRACE;
+        }
+
+        public virtual IMetric NewMetric(string type, string name)
+        {
+            // this enable CAT client logging cat message without explicit setup
+            if (!_mManager.HasContext())
+            {
+                _mManager.Setup();
+            }
+
+            if (_mManager.CatEnabled)
+            {
+                IMetric metric = new DefaultMetric(string.IsNullOrWhiteSpace(type) ? string.Empty : type, name);
+
+                _mManager.Add(metric);
+                return metric;
+            }
+            return NullMessage.METRIC;
+        }
+
         public virtual IHeartbeat NewHeartbeat(string type, string name)
         {
             if (!_mManager.HasContext())
@@ -162,41 +210,7 @@ namespace PureCat.Message.Spi.Internals
             return NullMessage.TRANSACTION;
         }
 
-        public virtual IMetric NewMetric(string type, string name)
-        {
-            // this enable CAT client logging cat message without explicit setup
-            if (!_mManager.HasContext())
-            {
-                _mManager.Setup();
-            }
 
-            if (_mManager.CatEnabled)
-            {
-                IMetric metric = new DefaultMetric(string.IsNullOrWhiteSpace(type) ? string.Empty : type, name);
-
-                _mManager.Add(metric);
-                return metric;
-            }
-            return NullMessage.METRIC;
-        }
-
-        public virtual ITrace NewTrace(string type, string name)
-        {
-            // this enable CAT client logging cat message without explicit setup
-            if (!_mManager.HasContext())
-            {
-                _mManager.Setup();
-            }
-
-            if (_mManager.CatEnabled)
-            {
-                ITrace trace = new DefaultTrace(type, name);
-
-                _mManager.Add(trace);
-                return trace;
-            }
-            return NullMessage.TRACE;
-        }
 
         public IForkedTransaction NewForkedTransaction(string type, string name)
         {
