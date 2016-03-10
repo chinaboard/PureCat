@@ -9,18 +9,16 @@ namespace PureCat.Message.Internals
     [Serializable]
     public abstract class AbstractMessage : IMessage
     {
-        private readonly string _mName;
-        private readonly string _mType;
-        private bool _mCompleted;
-        private StringBuilder _mData;
+        private readonly string _name;
+        private readonly string _type;
+        private bool _completed;
+        private StringBuilder _data;
         private IMessageManager _messageManager;
-
-        private string _mStatus = PureCatConstants.SUCCESS;
 
         protected AbstractMessage(string type, string name, IMessageManager messageManager = null)
         {
-            _mType = type;
-            _mName = name;
+            _type = type;
+            _name = name;
             _messageManager = messageManager;
             TimestampInMicros = MilliSecondTimer.CurrentTimeMicros();
         }
@@ -34,60 +32,42 @@ namespace PureCat.Message.Internals
 
         public IMessageManager MessageManager { get { return _messageManager; } }
 
-        public string Data
-        {
-            get { return _mData == null || _mData.Length == 0 ? string.Empty : _mData.ToString(); }
-        }
+        public string Data { get { return _data?.Length == 0 ? string.Empty : _data.ToString(); } }
 
-        public string Name
-        {
-            get { return _mName; }
-        }
+        public string Name { get { return _name; } }
 
-        public string Status
-        {
-            get { return _mStatus; }
-
-            set { _mStatus = value; }
-        }
+        public string Status { get; set; } = PureCatConstants.SUCCESS;
         /// <summary>
         ///   其实是Ticks除以10000
         /// </summary>
-        public long Timestamp
-        {
-            get { return TimestampInMicros / 1000L; }
-            set { TimestampInMicros = value * 1000L; }
-        }
+        public long Timestamp { get { return TimestampInMicros / 1000L; } set { TimestampInMicros = value * 1000L; } }
 
-        public string Type
-        {
-            get { return _mType; }
-        }
+        public string Type { get { return _type; } }
 
         public void AddData(string keyValuePairs)
         {
-            if (_mData == null)
+            if (_data == null)
             {
-                _mData = new StringBuilder(keyValuePairs);
+                _data = new StringBuilder(keyValuePairs);
             }
             else
             {
-                _mData.Append(keyValuePairs);
+                _data.Append(keyValuePairs);
             }
         }
 
         public void AddData(string key, Object value)
         {
-            if (_mData == null)
+            if (_data == null)
             {
-                _mData = new StringBuilder();
+                _data = new StringBuilder();
             }
-            else if (_mData.Length > 0)
+            else if (_data.Length > 0)
             {
-                _mData.Append('&');
+                _data.Append('&');
             }
 
-            _mData.Append(key).Append('=').Append(value);
+            _data.Append(key).Append('=').Append(value);
         }
 
         public virtual void Complete()
@@ -97,24 +77,24 @@ namespace PureCat.Message.Internals
 
         public bool IsCompleted()
         {
-            return _mCompleted;
+            return _completed;
         }
 
         public bool IsSuccess()
         {
-            return PureCatConstants.SUCCESS == _mStatus;
+            return PureCatConstants.SUCCESS == Status;
         }
 
         public void SetStatus(Exception e)
         {
-            _mStatus = e.GetType().FullName;
+            Status = e.GetType().FullName;
         }
 
         #endregion
 
         protected void SetCompleted(bool completed)
         {
-            _mCompleted = completed;
+            _completed = completed;
         }
 
         public override string ToString()
