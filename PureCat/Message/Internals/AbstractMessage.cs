@@ -32,7 +32,7 @@ namespace PureCat.Message.Internals
 
         public IMessageManager MessageManager { get { return _messageManager; } }
 
-        public string Data { get { return _data?.Length == 0 ? string.Empty : _data.ToString(); } }
+        public string Data { get { return _data?.Length == null ? string.Empty : _data.ToString(); } }
 
         public string Name { get { return _name; } }
 
