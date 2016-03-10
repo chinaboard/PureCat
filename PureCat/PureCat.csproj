@@ -63,7 +63,6 @@
     <Compile Include="Message\Internals\DefaultMetric.cs" />
     <Compile Include="Message\Internals\DefaultTrace.cs" />
     <Compile Include="Message\Internals\DefaultTransaction.cs" />
-    <Compile Include="Message\Internals\MessageId.cs" />
     <Compile Include="Message\ITrace.cs" />
     <Compile Include="Message\ITransaction.cs" />
     <Compile Include="Message\Spi\Codec\ChannelBuffer.cs" />
