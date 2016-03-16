@@ -15,20 +15,19 @@ namespace PureCat.Util
             if (encoding == null)
                 throw new ArgumentNullException("encoding");
 
-            XmlSerializer serializer = new XmlSerializer(o.GetType());
+            var serializer = new XmlSerializer(o.GetType());
 
-            XmlWriterSettings settings = new XmlWriterSettings();
+            var settings = new XmlWriterSettings();
             settings.Indent = true;
             settings.NewLineChars = "\r\n";
             settings.Encoding = encoding;
             settings.IndentChars = "    ";
 
-            using (XmlWriter writer = XmlWriter.Create(stream, settings))
+            using (var writer = XmlWriter.Create(stream, settings))
             {
-                XmlSerializerNamespaces ns = new XmlSerializerNamespaces();
+                var ns = new XmlSerializerNamespaces();
                 ns.Add("", "");
                 serializer.Serialize(writer, o, ns);
-                writer.Close();
             }
         }
 
@@ -40,15 +39,15 @@ namespace PureCat.Util
         /// <returns>序列化产生的XML字符串</returns>
         public static string XmlSerialize(object o, Encoding encoding)
         {
-            using (MemoryStream stream = new MemoryStream())
+            using (var stream = new MemoryStream())
             {
                 XmlSerializeInternal(stream, o, encoding);
 
                 stream.Position = 0;
-                using (StreamReader reader = new StreamReader(stream, encoding))
-                {
-                    return reader.ReadToEnd();
-                }
+                var reader = new StreamReader(stream, encoding);
+
+                return reader.ReadToEnd();
+
             }
         }
 
@@ -83,13 +82,13 @@ namespace PureCat.Util
             if (encoding == null)
                 throw new ArgumentNullException("encoding");
 
-            XmlSerializer mySerializer = new XmlSerializer(typeof(T));
-            using (MemoryStream ms = new MemoryStream(encoding.GetBytes(s)))
+            var mySerializer = new XmlSerializer(typeof(T));
+            using (var ms = new MemoryStream(encoding.GetBytes(s)))
             {
-                using (StreamReader sr = new StreamReader(ms, encoding))
-                {
-                    return (T)mySerializer.Deserialize(sr);
-                }
+                var sr = new StreamReader(ms, encoding);
+
+                return (T)mySerializer.Deserialize(sr);
+
             }
         }
 
@@ -107,7 +106,7 @@ namespace PureCat.Util
             if (encoding == null)
                 throw new ArgumentNullException("encoding");
 
-            string xml = File.ReadAllText(path, encoding);
+            var xml = File.ReadAllText(path, encoding);
             return XmlDeserialize<T>(xml, encoding);
         }
     }

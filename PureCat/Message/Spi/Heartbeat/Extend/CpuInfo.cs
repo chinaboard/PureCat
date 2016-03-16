@@ -4,7 +4,7 @@ using System.Diagnostics;
 
 namespace PureCat.Message.Spi.Heartbeat.Extend
 {
-    public class CpuInfo : HeartbeatExtention
+    public class CpuInfo : HeartbeatExtention, IDisposable
     {
         protected PerformanceCounter _cpu = null;
         protected Dictionary<string, double> _dict = null;
@@ -25,6 +25,12 @@ namespace PureCat.Message.Spi.Heartbeat.Extend
             _dict.Clear();
             float percentage = _cpu.NextValue();
             _dict["Percentage"] = Math.Round(percentage, 2, MidpointRounding.AwayFromZero);
+        }
+
+        public void Dispose()
+        {
+            _cpu?.Dispose();
+            GC.SuppressFinalize(this);
         }
 
         public override Dictionary<string, double> Dict

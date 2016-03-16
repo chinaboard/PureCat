@@ -1,18 +1,19 @@
 ﻿using System.Text;
 using System.IO;
+using System;
 
 namespace PureCat.Message.Spi.Codec
 {
-    public class ChannelBuffer
+    public class ChannelBuffer : IDisposable
     {
-        private readonly MemoryStream _mBuf;
+        private readonly MemoryStream _memoryBuf;
 
-        private readonly BinaryWriter _mWriter;
+        private readonly BinaryWriter _binaryWriter;
 
         public ChannelBuffer(int capacity)
         {
-            _mBuf = new MemoryStream(capacity);
-            _mWriter = new BinaryWriter(_mBuf, Encoding.UTF8);
+            _memoryBuf = new MemoryStream(capacity);
+            _binaryWriter = new BinaryWriter(_memoryBuf, Encoding.UTF8);
         }
 
         /// <summary>
@@ -23,11 +24,11 @@ namespace PureCat.Message.Spi.Codec
         public int BytesBefore(byte separator)
         {
             int count = 0;
-            long oldPosition = _mBuf.Position;
+            long oldPosition = _memoryBuf.Position;
 
-            while (_mBuf.Position < _mBuf.Length)
+            while (_memoryBuf.Position < _memoryBuf.Length)
             {
-                int b = _mBuf.ReadByte();
+                int b = _memoryBuf.ReadByte();
 
                 if (b == -1)
                 {
@@ -35,66 +36,66 @@ namespace PureCat.Message.Spi.Codec
                 }
                 if ((byte)b == separator)
                 {
-                    _mBuf.Position = oldPosition;
+                    _memoryBuf.Position = oldPosition;
                     return count;
                 }
 
                 count++;
             }
 
-            _mBuf.Position = oldPosition;
+            _memoryBuf.Position = oldPosition;
             return 0;
         }
 
         public void Skip(int bytes)
         {
-            _mBuf.Position += bytes;
+            _memoryBuf.Position += bytes;
         }
 
         public int ReadableBytes()
         {
-            return (int)(_mBuf.Length - _mBuf.Position);
+            return (int)(_memoryBuf.Length - _memoryBuf.Position);
         }
 
         public int ReadBytes(byte[] data)
         {
-            return _mBuf.Read(data, 0, data.Length);
+            return _memoryBuf.Read(data, 0, data.Length);
         }
 
         public byte ReadByte()
         {
-            return (byte)(_mBuf.ReadByte() & 0xFF);
+            return (byte)(_memoryBuf.ReadByte() & 0xFF);
         }
 
         public void WriteByte(byte b)
         {
-            _mWriter.Write(b);
+            _binaryWriter.Write(b);
         }
 
         public void WriteByte(char c)
         {
-            _mWriter.Write((byte)(c & 0xFF));
+            _binaryWriter.Write((byte)(c & 0xFF));
         }
 
         public void WriteInt(int i)
         {
-            _mWriter.Write(ToBytes(i));
+            _binaryWriter.Write(ToBytes(i));
         }
 
         public void WriteBytes(byte[] data)
         {
-            _mWriter.Write(data);
+            _binaryWriter.Write(data);
         }
 
         public void WriteBytes(byte[] data, int offset, int len)
         {
-            _mWriter.Write(data, offset, len);
+            _binaryWriter.Write(data, offset, len);
         }
 
         // for test purpose
         public void Reset()
         {
-            _mBuf.Seek(0, SeekOrigin.Begin);
+            _memoryBuf.Seek(0, SeekOrigin.Begin);
         }
 
         /// <summary>
@@ -104,8 +105,8 @@ namespace PureCat.Message.Spi.Codec
         /// <param name="i"> </param>
         public void SetInt(int index, int i)
         {
-            _mWriter.Seek(index, SeekOrigin.Begin);
-            _mWriter.Write(ToBytes(i));
+            _binaryWriter.Seek(index, SeekOrigin.Begin);
+            _binaryWriter.Write(ToBytes(i));
         }
 
         private static byte[] ToBytes(int value)
@@ -121,7 +122,7 @@ namespace PureCat.Message.Spi.Codec
 
         public byte[] ToArray()
         {
-            return _mBuf.ToArray();
+            return _memoryBuf.ToArray();
         }
 
         /// <summary>
@@ -130,13 +131,21 @@ namespace PureCat.Message.Spi.Codec
         /// <returns> </returns>
         public override string ToString()
         {
-            byte[] data = _mBuf.ToArray();
-            int offset = (int)_mBuf.Position;
+            byte[] data = _memoryBuf.ToArray();
+            int offset = (int)_memoryBuf.Position;
             string str = Encoding.UTF8.GetString(data, offset, data.Length - offset);
 
             //ToArray本身就不为该Position，所以下一行代码多余
             //_mBuf.Seek(offset, SeekOrigin.Begin);
             return str;
+        }
+
+        public void Dispose()
+        {
+            _binaryWriter?.Close();
+            _memoryBuf?.Close();
+
+            GC.SuppressFinalize(this);
         }
     }
 }

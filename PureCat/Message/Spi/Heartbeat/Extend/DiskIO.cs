@@ -1,9 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace PureCat.Message.Spi.Heartbeat.Extend
 {
-    public class DiskIO : HeartbeatExtention
+    public class DiskIO : HeartbeatExtention, IDisposable
     {
         protected Dictionary<string, double> _dict = null;
 
@@ -35,6 +36,14 @@ namespace PureCat.Message.Spi.Heartbeat.Extend
             _dict["Read"] = _readBytesSec.NextValue();
             _dict["Write"] = _writeByteSec.NextValue();
             _dict["Total"] = _dataBytesSec.NextValue();
+        }
+
+        public void Dispose()
+        {
+            _readBytesSec?.Dispose();
+            _writeByteSec?.Dispose();
+            _dataBytesSec?.Dispose();
+            GC.SuppressFinalize(this);
         }
     }
 }

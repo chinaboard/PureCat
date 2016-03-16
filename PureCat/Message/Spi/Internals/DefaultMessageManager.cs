@@ -11,7 +11,6 @@ using System.Linq;
 
 namespace PureCat.Message.Spi.Internals
 {
-    [Serializable]
     public class DefaultMessageManager : IMessageManager
     {
         // we don't use static modifier since MessageManager is a singleton in
