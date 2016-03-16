@@ -42,8 +42,8 @@ namespace PureCat.Message.Spi.Internals
                 PureCatClient.DoTransaction("System", "Status", () =>
                 {
                     _nodeInfo.Refresh();
-                    PureCatClient.LogHeartbeat("Heartbeat", AppEnv.IP, PureCatConstants.SUCCESS, XmlHelper.XmlSerialize(_nodeInfo, Encoding.UTF8));
-                    PureCatClient.LogEvent("System", $"Cat.Version : {PureCatClient.Version}", PureCatConstants.SUCCESS, PureCatClient.Version);
+                    PureCatClient.GetProducer().LogHeartbeat("Heartbeat", AppEnv.IP, PureCatConstants.SUCCESS, XmlHelper.XmlSerialize(_nodeInfo, Encoding.UTF8));
+                    PureCatClient.GetProducer().LogEvent("System", $"Cat.Version : {PureCatClient.Version}", PureCatConstants.SUCCESS, PureCatClient.Version);
                 });
 
                 Thread.Sleep(60000);
