@@ -5,9 +5,17 @@
     <version>0.1.3.0-beta</version>
     <title>PureCat</title>
     <authors>chinaboard</authors>
+    <owners>chinaboard</owners>
     <projectUrl>https://github.com/chinaboard/PureCat</projectUrl>
     <description>Cat .Net client library</description>
     <tags>cat,apm,log,track</tags>
+
+    <releaseNotes>
+      <![CDATA[
+        beta
+        ]]>
+    </releaseNotes>
+
   </metadata>
   <files>
     <file src="bin\Release\*.dll" target="lib" />
