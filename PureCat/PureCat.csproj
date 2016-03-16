@@ -28,6 +28,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <DocumentationFile>bin\Release\PureCat.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.VisualBasic" />
@@ -40,6 +41,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="PureCat.nuspec" />
     <Compile Include="Configuration\ClientConfigManager.cs" />
     <Compile Include="Message\IForkedTransaction.cs" />
     <Compile Include="Message\Internals\DefaultForkedTransaction.cs" />
@@ -107,6 +109,11 @@
     </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>IF NOT "$(ConfigurationName)"=="Release" EXIT /B 0 
+IF NOT EXIST $(SolutionDir)ReleasePackages MD $(SolutionDir)ReleasePackages 
+$(SolutionDir).nuget\NuGet.exe Pack $(ProjectDir)$(ProjectName).nuspec -o $(SolutionDir)ReleasePackages\</PostBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
