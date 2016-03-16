@@ -48,7 +48,7 @@
     <Compile Include="Message\Internals\DefaultTaggedTransaction.cs" />
     <Compile Include="Message\Internals\NullMessage.cs" />
     <Compile Include="Message\ITaggedTransaction.cs" />
-    <Compile Include="PureCat.cs" />
+    <Compile Include="PureCatClient.cs" />
     <Compile Include="Context\CatContext.cs" />
     <Compile Include="Configuration\ClientConfig.cs" />
     <Compile Include="Configuration\Domain.cs" />

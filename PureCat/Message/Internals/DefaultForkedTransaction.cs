@@ -27,7 +27,7 @@ namespace PureCat.Message.Internals
 
                 // Detach parent transaction and this forked transaction, by calling linkAsRunAway(), at this earliest moment,
                 // so that thread synchronization is not needed at all between them in the future.
-                _forkedMessageId = PureCat.CreateMessageId();
+                _forkedMessageId = PureCatClient.CreateMessageId();
             }
         }
 

@@ -33,17 +33,17 @@ namespace PureCat.Message.Spi.Internals
                 if (!_nodeInfo.HaveAcessRight)
                     break;
 
-                if (!PureCat.IsInitialized())
+                if (!PureCatClient.IsInitialized())
                 {
                     Thread.Sleep(5000);
                     continue;
                 }
 
-                PureCat.DoTransaction("System", "Status", () =>
+                PureCatClient.DoTransaction("System", "Status", () =>
                 {
                     _nodeInfo.Refresh();
-                    PureCat.LogHeartbeat("Heartbeat", AppEnv.IP, PureCatConstants.SUCCESS, XmlHelper.XmlSerialize(_nodeInfo, Encoding.UTF8));
-                    PureCat.LogEvent("System", $"Cat.Version : {PureCat.Version}", PureCatConstants.SUCCESS, PureCat.Version);
+                    PureCatClient.LogHeartbeat("Heartbeat", AppEnv.IP, PureCatConstants.SUCCESS, XmlHelper.XmlSerialize(_nodeInfo, Encoding.UTF8));
+                    PureCatClient.LogEvent("System", $"Cat.Version : {PureCatClient.Version}", PureCatConstants.SUCCESS, PureCatClient.Version);
                 });
 
                 Thread.Sleep(60000);

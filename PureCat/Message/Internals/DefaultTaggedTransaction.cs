@@ -98,7 +98,7 @@ namespace PureCat.Message.Internals
             }
             else
             {
-                PureCat.LogError(new Exception("null child message"));
+                PureCatClient.LogError(new Exception("null child message"));
             }
 
             return this;

@@ -211,7 +211,7 @@ namespace PureCat.Message.Spi.Internals
 
         internal Context GetContext()
         {
-            if (PureCat.IsInitialized())
+            if (PureCatClient.IsInitialized())
             {
                 Context ctx = _mContext.Value;
 

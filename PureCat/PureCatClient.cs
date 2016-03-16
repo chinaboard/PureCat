@@ -9,11 +9,11 @@ using System.IO;
 
 namespace PureCat
 {
-    public class PureCat
+    public class PureCatClient
     {
 
         #region Other
-        private static readonly PureCat _instance = null;
+        private static readonly PureCatClient _instance = null;
         private static readonly object _lock = new object();
 
         public static string Version { get { return $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Version}"; } }
@@ -69,7 +69,7 @@ namespace PureCat
 
         #region Initialize
 
-        static PureCat()
+        static PureCatClient()
         {
             if (_instance == null)
             {
@@ -77,7 +77,7 @@ namespace PureCat
                 {
                     if (_instance == null)
                     {
-                        _instance = new PureCat();
+                        _instance = new PureCatClient();
                     }
                 }
             }
@@ -104,7 +104,7 @@ namespace PureCat
         {
             if (_instance.Initialized)
                 return;
-            Logger.Info($"Initializing Cat .Net Client ...Cat.Version : {PureCat.Version}");
+            Logger.Info($"Initializing Cat .Net Client ...Cat.Version : {PureCatClient.Version}");
             DefaultMessageManager manager = new DefaultMessageManager();
 
             manager.InitializeClient(configManager.ClientConfig);
