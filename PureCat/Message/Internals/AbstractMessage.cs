@@ -6,7 +6,7 @@ using PureCat.Message.Spi;
 
 namespace PureCat.Message.Internals
 {
-    [Serializable]
+    
     public abstract class AbstractMessage : IMessage
     {
         private readonly string _name;

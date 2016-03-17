@@ -3,7 +3,7 @@ using System;
 
 namespace PureCat.Message.Internals
 {
-    [Serializable]
+    
     public class DefaultForkedTransaction : DefaultTransaction, IForkedTransaction
     {
         private string _rootMessageId;

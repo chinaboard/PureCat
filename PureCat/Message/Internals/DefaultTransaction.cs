@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace PureCat.Message.Internals
 {
-    [Serializable]
+    
     public class DefaultTransaction : AbstractMessage, ITransaction
     {
         private IList<IMessage> _mChildren;
