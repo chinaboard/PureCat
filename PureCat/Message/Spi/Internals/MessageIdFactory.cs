@@ -10,15 +10,15 @@ namespace PureCat.Message.Spi.Internals
     /// </summary>
     public class MessageIdFactory
     {
-        private string _mDomain;
-        private int _mIndex;
+        private string _domain;
+        private int _index;
 
-        private string _mIpAddress;
-        private long _mLastTimestamp;
+        private string _ipAddress;
+        private long _lastTimestamp;
 
         public MessageIdFactory()
         {
-            _mLastTimestamp = Timestamp;
+            _lastTimestamp = Timestamp;
         }
 
         protected internal long Timestamp
@@ -28,31 +28,31 @@ namespace PureCat.Message.Spi.Internals
 
         public string Domain
         {
-            set { _mDomain = value; }
+            set { _domain = value; }
         }
 
         public string IpAddress
         {
-            set { _mIpAddress = value; }
+            set { _ipAddress = value; }
         }
 
         public string GetNextId()
         {
             long timestamp = Timestamp;
 
-            if (timestamp != _mLastTimestamp)
+            if (timestamp != _lastTimestamp)
             {
-                Interlocked.Exchange(ref _mIndex, 0);
-                Interlocked.Exchange(ref _mLastTimestamp, timestamp);
+                Interlocked.Exchange(ref _index, 0);
+                Interlocked.Exchange(ref _lastTimestamp, timestamp);
             }
 
-            int index = Interlocked.Increment(ref _mIndex);
+            int index = Interlocked.Increment(ref _index);
 
-            StringBuilder sb = new StringBuilder(_mDomain.Length + 32);
+            StringBuilder sb = new StringBuilder(_domain.Length + 32);
 
-            sb.Append(_mDomain);
+            sb.Append(_domain);
             sb.Append('-');
-            sb.Append(_mIpAddress);
+            sb.Append(_ipAddress);
             sb.Append('-');
             sb.Append(timestamp);
             sb.Append('-');
@@ -63,9 +63,9 @@ namespace PureCat.Message.Spi.Internals
 
         public void Initialize(string domain)
         {
-            _mDomain = domain;
+            _domain = domain;
 
-            if (_mIpAddress != null) return;
+            if (_ipAddress != null) return;
 
             byte[] bytes = NetworkInterfaceManager.GetAddressBytes();
 
@@ -77,7 +77,7 @@ namespace PureCat.Message.Spi.Internals
                 sb.Append((b & 0x0F).ToString("x"));
             }
 
-            _mIpAddress = sb.ToString();
+            _ipAddress = sb.ToString();
         }
     }
 }

@@ -17,19 +17,19 @@ namespace PureCat.Message.Spi.Internals
         // production actually
         private readonly CatThreadLocal<Context> _mContext = new CatThreadLocal<Context>();
 
-        private ClientConfig _mClientConfig;
+        private ClientConfig _clientConfig;
 
-        private MessageIdFactory _mFactory;
+        private MessageIdFactory _factory;
 
-        private bool _mFirstMessage = true;
+        private bool _firstMessage = true;
 
-        private string _mHostName;
+        private string _hostName;
 
-        private IMessageSender _mSender;
+        private IMessageSender _sender;
 
-        private IMessageStatistics _mStatistics;
+        private IMessageStatistics _statistics;
 
-        private StatusUpdateTask _mStatusUpdateTask;
+        private StatusUpdateTask _statusUpdateTask;
 
         private ConcurrentDictionary<string, ITaggedTransaction> _taggedTransactions;
 
@@ -37,7 +37,7 @@ namespace PureCat.Message.Spi.Internals
 
         public virtual ClientConfig ClientConfig
         {
-            get { return _mClientConfig; }
+            get { return _clientConfig; }
         }
 
         public virtual ITransaction PeekTransaction
@@ -82,22 +82,22 @@ namespace PureCat.Message.Spi.Internals
 
         public virtual void InitializeClient(ClientConfig clientConfig)
         {
-            _mClientConfig = clientConfig ?? new ClientConfig();
+            _clientConfig = clientConfig ?? new ClientConfig();
 
-            _mHostName = NetworkInterfaceManager.GetLocalHostName();
-            _mStatistics = new DefaultMessageStatistics();
-            _mSender = new TcpMessageSender(_mClientConfig, _mStatistics);
-            _mSender.Initialize();
-            _mFactory = new MessageIdFactory();
-            _mStatusUpdateTask = new StatusUpdateTask(_mStatistics);
+            _hostName = NetworkInterfaceManager.GetLocalHostName();
+            _statistics = new DefaultMessageStatistics();
+            _sender = new TcpMessageSender(_clientConfig, _statistics);
+            _sender.Initialize();
+            _factory = new MessageIdFactory();
+            _statusUpdateTask = new StatusUpdateTask(_statistics);
 
             _taggedTransactions = new ConcurrentDictionary<string, ITaggedTransaction>();
 
             // initialize domain and ip address
-            _mFactory.Initialize(_mClientConfig.Domain.Id);
+            _factory.Initialize(_clientConfig.Domain.Id);
 
             // start status update task
-            ThreadPool.QueueUserWorkItem(_mStatusUpdateTask.Run);
+            ThreadPool.QueueUserWorkItem(_statusUpdateTask.Run);
             Logger.Info("Thread(StatusUpdateTask) started.");
         }
 
@@ -108,7 +108,7 @@ namespace PureCat.Message.Spi.Internals
 
         public virtual bool CatEnabled
         {
-            get { return _mClientConfig.Domain.Enabled && _mContext.Value != null; }
+            get { return _clientConfig.Domain.Enabled && _mContext.Value != null; }
         }
 
         public virtual void Add(IMessage message)
@@ -144,7 +144,7 @@ namespace PureCat.Message.Spi.Internals
 
         public virtual void Setup()
         {
-            Context ctx = new Context(_mClientConfig.Domain.Id, _mHostName,
+            Context ctx = new Context(_clientConfig.Domain.Id, _hostName,
                                       NetworkInterfaceManager.GetLocalHostAddress());
 
             _mContext.Value = ctx;
@@ -164,9 +164,9 @@ namespace PureCat.Message.Spi.Internals
                     _taggedTransactions[tt.Tag] = tt;
                 }
             }
-            else if (_mFirstMessage)
+            else if (_firstMessage)
             {
-                _mFirstMessage = false;
+                _firstMessage = false;
                 Logger.Warn("CAT client is not enabled because it's not initialized yet");
             }
         }
@@ -187,7 +187,7 @@ namespace PureCat.Message.Spi.Internals
         #endregion
         public MessageIdFactory GetMessageIdFactory()
         {
-            return _mFactory;
+            return _factory;
         }
 
         internal void Flush(IMessageTree tree)
@@ -196,15 +196,15 @@ namespace PureCat.Message.Spi.Internals
             {
                 tree.MessageId = NextMessageId();
             }
-            if (_mSender != null)
+            if (_sender != null)
             {
-                _mSender.Send(tree);
+                _sender.Send(tree);
 
                 Reset();
 
-                if (_mStatistics != null)
+                if (_statistics != null)
                 {
-                    _mStatistics.OnSending(tree);
+                    _statistics.OnSending(tree);
                 }
             }
         }
@@ -235,7 +235,7 @@ namespace PureCat.Message.Spi.Internals
 
         public string NextMessageId()
         {
-            return _mFactory.GetNextId();
+            return _factory.GetNextId();
         }
 
         #region Nested type: Context

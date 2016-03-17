@@ -21,7 +21,7 @@ namespace PureCat.Message.Spi.IO
         private readonly IMessageStatistics _statistics;
         private long _errors;
         private bool _active;
-        private readonly int _maxQueueSize = 100000;
+        private readonly int _maxQueueSize;
 
         public TcpMessageSender(ClientConfig clientConfig, IMessageStatistics statistics)
         {
@@ -37,7 +37,7 @@ namespace PureCat.Message.Spi.IO
 
         public virtual bool HasSendingMessage
         {
-            get { return _queue.Count > 0; }
+            get { return _queue.Count > 0 && _connPool.Count > 0; }
         }
 
         public void Initialize()

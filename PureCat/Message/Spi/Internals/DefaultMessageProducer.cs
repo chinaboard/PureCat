@@ -6,16 +6,16 @@ namespace PureCat.Message.Spi.Internals
 {
     public class DefaultMessageProducer : IMessageProducer
     {
-        private readonly IMessageManager _mManager;
+        private readonly IMessageManager _manager;
 
         public DefaultMessageProducer(IMessageManager manager)
         {
-            _mManager = manager;
+            _manager = manager;
         }
 
         public string CreateMessageId()
         {
-            return _mManager.GetMessageIdFactory().GetNextId();
+            return _manager.GetMessageIdFactory().GetNextId();
         }
 
         #region IMessageProducer Members
@@ -105,16 +105,16 @@ namespace PureCat.Message.Spi.Internals
 
         public virtual IEvent NewEvent(string type, string name)
         {
-            if (!_mManager.HasContext())
+            if (!_manager.HasContext())
             {
-                _mManager.Setup();
+                _manager.Setup();
             }
 
-            if (_mManager.CatEnabled)
+            if (_manager.CatEnabled)
             {
                 IEvent @event = new DefaultEvent(type, name);
 
-                _mManager.Add(@event);
+                _manager.Add(@event);
                 return @event;
             }
             return NullMessage.EVENT;
@@ -123,16 +123,16 @@ namespace PureCat.Message.Spi.Internals
         public virtual ITrace NewTrace(string type, string name)
         {
             // this enable CAT client logging cat message without explicit setup
-            if (!_mManager.HasContext())
+            if (!_manager.HasContext())
             {
-                _mManager.Setup();
+                _manager.Setup();
             }
 
-            if (_mManager.CatEnabled)
+            if (_manager.CatEnabled)
             {
                 ITrace trace = new DefaultTrace(type, name);
 
-                _mManager.Add(trace);
+                _manager.Add(trace);
                 return trace;
             }
             return NullMessage.TRACE;
@@ -141,16 +141,16 @@ namespace PureCat.Message.Spi.Internals
         public virtual IMetric NewMetric(string type, string name)
         {
             // this enable CAT client logging cat message without explicit setup
-            if (!_mManager.HasContext())
+            if (!_manager.HasContext())
             {
-                _mManager.Setup();
+                _manager.Setup();
             }
 
-            if (_mManager.CatEnabled)
+            if (_manager.CatEnabled)
             {
                 IMetric metric = new DefaultMetric(string.IsNullOrWhiteSpace(type) ? string.Empty : type, name);
 
-                _mManager.Add(metric);
+                _manager.Add(metric);
                 return metric;
             }
             return NullMessage.METRIC;
@@ -158,16 +158,16 @@ namespace PureCat.Message.Spi.Internals
 
         public virtual IHeartbeat NewHeartbeat(string type, string name)
         {
-            if (!_mManager.HasContext())
+            if (!_manager.HasContext())
             {
-                _mManager.Setup();
+                _manager.Setup();
             }
 
-            if (_mManager.CatEnabled)
+            if (_manager.CatEnabled)
             {
                 IHeartbeat heartbeat = new DefaultHeartbeat(type, name);
 
-                _mManager.Add(heartbeat);
+                _manager.Add(heartbeat);
                 return heartbeat;
             }
             return NullMessage.HEARTBEAT;
@@ -176,16 +176,16 @@ namespace PureCat.Message.Spi.Internals
         public virtual ITransaction NewTransaction(string type, string name)
         {
             // this enable CAT client logging cat message without explicit setup
-            if (!_mManager.HasContext())
+            if (!_manager.HasContext())
             {
-                _mManager.Setup();
+                _manager.Setup();
             }
 
-            if (_mManager.CatEnabled)
+            if (_manager.CatEnabled)
             {
-                ITransaction transaction = new DefaultTransaction(type, name, _mManager);
+                ITransaction transaction = new DefaultTransaction(type, name, _manager);
 
-                _mManager.Start(transaction, false);
+                _manager.Start(transaction, false);
                 return transaction;
             }
             return NullMessage.TRANSACTION;
@@ -194,14 +194,14 @@ namespace PureCat.Message.Spi.Internals
         public virtual ITransaction NewTransaction(ITransaction parent, string type, string name)
         {
             // this enable CAT client logging cat message without explicit setup
-            if (!_mManager.HasContext())
+            if (!_manager.HasContext())
             {
-                _mManager.Setup();
+                _manager.Setup();
             }
 
-            if (_mManager.CatEnabled && parent != null)
+            if (_manager.CatEnabled && parent != null)
             {
-                ITransaction transaction = new DefaultTransaction(type, name, _mManager);
+                ITransaction transaction = new DefaultTransaction(type, name, _manager);
 
                 parent.AddChild(transaction);
                 transaction.Standalone = false;
@@ -215,27 +215,27 @@ namespace PureCat.Message.Spi.Internals
         public IForkedTransaction NewForkedTransaction(string type, string name)
         {
             // this enable CAT client logging cat message without explicit setup
-            if (!_mManager.HasContext())
+            if (!_manager.HasContext())
             {
-                _mManager.Setup();
+                _manager.Setup();
             }
 
-            if (_mManager.CatEnabled)
+            if (_manager.CatEnabled)
             {
-                IMessageTree tree = _mManager.ThreadLocalMessageTree;
+                IMessageTree tree = _manager.ThreadLocalMessageTree;
 
                 if (tree.MessageId == null)
                 {
                     tree.MessageId = CreateMessageId();
                 }
 
-                IForkedTransaction transaction = new DefaultForkedTransaction(type, name, _mManager);
+                IForkedTransaction transaction = new DefaultForkedTransaction(type, name, _manager);
 
-                if (_mManager is DefaultMessageManager)
+                if (_manager is DefaultMessageManager)
                 {
-                    ((DefaultMessageManager)_mManager).LinkAsRunAway(transaction);
+                    ((DefaultMessageManager)_manager).LinkAsRunAway(transaction);
                 }
-                _mManager.Start(transaction, true);
+                _manager.Start(transaction, true);
                 return transaction;
             }
             else
@@ -247,23 +247,23 @@ namespace PureCat.Message.Spi.Internals
         public ITaggedTransaction NewTaggedTransaction(string type, string name, string tag)
         {
             // this enable CAT client logging cat message without explicit setup
-            if (!_mManager.HasContext())
+            if (!_manager.HasContext())
             {
-                _mManager.Setup();
+                _manager.Setup();
             }
 
-            if (_mManager.CatEnabled)
+            if (_manager.CatEnabled)
             {
-                IMessageTree tree = _mManager.ThreadLocalMessageTree;
+                IMessageTree tree = _manager.ThreadLocalMessageTree;
 
                 if (tree.MessageId == null)
                 {
                     tree.MessageId = CreateMessageId();
                 }
 
-                ITaggedTransaction transaction = new DefaultTaggedTransaction(type, name, tag, _mManager);
+                ITaggedTransaction transaction = new DefaultTaggedTransaction(type, name, tag, _manager);
 
-                _mManager.Start(transaction, true);
+                _manager.Start(transaction, true);
                 return transaction;
             }
             else
