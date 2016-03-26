@@ -118,12 +118,12 @@ namespace PureCat.Message.Spi.IO
         {
             while (true)
             {
-                if (_active)
+                if (_active && _connPool.Count != 0)
                 {
                     var connPoolList = _connPool.ToList();
                     connPoolList.ForEach(kvp =>
                     {
-                        if (!kvp.Value.Connected)
+                        if (kvp.Value != null && !kvp.Value.Connected)
                             _connPool[kvp.Key] = CreateChannel(kvp.Key);
                     });
 
