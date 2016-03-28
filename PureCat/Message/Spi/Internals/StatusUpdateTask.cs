@@ -43,7 +43,7 @@ namespace PureCat.Message.Spi.Internals
                 {
                     _nodeInfo.Refresh();
                     PureCatClient.GetProducer().LogHeartbeat("Heartbeat", AppEnv.IP, PureCatConstants.SUCCESS, XmlHelper.XmlSerialize(_nodeInfo, Encoding.UTF8));
-                    PureCatClient.GetProducer().LogEvent("System", $"Cat.Version : {PureCatClient.Version}", PureCatConstants.SUCCESS, PureCatClient.Version);
+                    PureCatClient.GetProducer().LogEvent("System", $"PureCat.Version : {PureCatClient.Version}", PureCatConstants.SUCCESS, PureCatClient.Version);
                 });
 
                 Thread.Sleep(60000);
