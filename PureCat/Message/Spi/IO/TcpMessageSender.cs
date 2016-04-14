@@ -203,7 +203,10 @@ namespace PureCat.Message.Spi.IO
                         Send(tree);
                     }
                 }
-                Thread.Sleep(5000);
+                else
+                {
+                    Thread.Sleep(5000);
+                }
             }
         }
 
