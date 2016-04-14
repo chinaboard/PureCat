@@ -205,7 +205,7 @@ namespace PureCat.Message.Spi.IO
                 }
                 else
                 {
-                    Thread.Sleep(5000);
+                    Thread.Sleep(100);
                 }
             }
         }
