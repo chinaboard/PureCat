@@ -8,17 +8,32 @@ namespace PureCat.Util
     ///</summary>
     public class MilliSecondTimer
     {
-        public static long CurrentTimeMicros()
+        public static long CurrentTimeMicros
         {
-            return DateTime.Now.Ticks / 10L; // it's millisecond precise
+            get
+            {
+                // it's millisecond precise
+                return DateTime.Now.Ticks / 10L;
+            }
         }
 
-        public static long CurrentTimeHoursForJava()
+        public static long CurrentTimeMillis
         {
-            DateTime baseline = new DateTime(1970, 1, 1, 0, 0, 0);
-            TimeSpan ts = new TimeSpan(DateTime.UtcNow.Ticks - baseline.Ticks);
+            get
+            {
+                return (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds;
+            }
+        }
 
-            return ((long)ts.TotalMilliseconds / 3600000L);
+        public static long CurrentTimeHoursForJava
+        {
+            get
+            {
+                DateTime baseline = new DateTime(1970, 1, 1, 0, 0, 0);
+                TimeSpan ts = new TimeSpan(DateTime.UtcNow.Ticks - baseline.Ticks);
+
+                return ((long)ts.TotalMilliseconds / 3600000L);
+            }
         }
     }
 }

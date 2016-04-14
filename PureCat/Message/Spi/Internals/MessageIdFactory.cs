@@ -23,7 +23,7 @@ namespace PureCat.Message.Spi.Internals
 
         protected internal long Timestamp
         {
-            get { return MilliSecondTimer.CurrentTimeHoursForJava(); }
+            get { return MilliSecondTimer.CurrentTimeHoursForJava; }
         }
 
         public string Domain

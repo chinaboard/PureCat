@@ -20,7 +20,7 @@ namespace PureCat.Message.Internals
             _type = type;
             _name = name;
             _messageManager = messageManager;
-            TimestampInMicros = MilliSecondTimer.CurrentTimeMicros();
+            TimestampInMicros = MilliSecondTimer.CurrentTimeMicros;
         }
 
         /// <summary>

@@ -13,6 +13,8 @@
 
         public const int MAX_ITEM_LENGTH = 50;
 
+        public const int MAX_CHILD_NUMBER = 200;
+
         /**
          * Cat instrument attribute names
          */

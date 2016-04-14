@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace PureCat.Message.Internals
 {
-    
+
     public class DefaultTransaction : AbstractMessage, ITransaction
     {
         private IList<IMessage> _mChildren;
@@ -104,7 +104,7 @@ namespace PureCat.Message.Internals
             }
             else
             {
-                _mDurationInMicro = MilliSecondTimer.CurrentTimeMicros() - TimestampInMicros;
+                _mDurationInMicro = MilliSecondTimer.CurrentTimeMicros - TimestampInMicros;
 
                 SetCompleted(true);
 

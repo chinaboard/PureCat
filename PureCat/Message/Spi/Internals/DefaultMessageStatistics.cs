@@ -12,12 +12,12 @@ namespace PureCat.Message.Spi.Internals
         public long Overflowed { get { return Interlocked.CompareExchange(ref _overflowed, -1, -1); } }
         public long Bytes { get { return Interlocked.CompareExchange(ref _bytes, -1, -1); } }
 
-        public void OnSending(IMessageTree tree)
+        public void OnSending()
         {
             Interlocked.Increment(ref _produced);
         }
 
-        public void OnOverflowed(IMessageTree tree)
+        public void OnOverflowed()
         {
             Interlocked.Increment(ref _overflowed);
         }

@@ -8,9 +8,9 @@
 
         long Bytes { get; }
 
-        void OnSending(IMessageTree tree);
+        void OnSending();
 
-        void OnOverflowed(IMessageTree tree);
+        void OnOverflowed();
 
         void OnBytes(int size);
 

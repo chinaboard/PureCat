@@ -204,7 +204,7 @@ namespace PureCat.Message.Spi.Internals
 
                 if (_statistics != null)
                 {
-                    _statistics.OnSending(tree);
+                    _statistics.OnSending();
                 }
             }
         }
