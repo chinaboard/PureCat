@@ -14,46 +14,32 @@ namespace PureCat.Demo
         static void Main(string[] args)
         {
             PureCatClient.Initialize();
-            var t = int.Parse(Console.ReadLine());
-            for (int i = 0; i < t; i++)
-                Task.Factory.StartNew(() =>
-                {
-                    while (true)
-                    {
-                        var a = DateTime.Now.Second;
-                        //Console.WriteLine(DateTime.Now);
+            while (true)
+            {
+                var a = DateTime.Now.Second;
+                Console.WriteLine(DateTime.Now);
+                var context = PureCatClient.DoTransaction("Do", nameof(DoTest), DoTest);
 
-                        PureCatClient.DoTransaction("SQL", nameof(AtomicTest), AtomicTest);
+                var b = DateTime.Now.Second;
 
-                        var context = PureCatClient.DoTransaction("Do", nameof(DoTest), DoTest);
+                PureCatClient.DoTransaction("Do", nameof(Add), () => Add(a, b, context));
 
-                        var b = DateTime.Now.Second;
-
-                        PureCatClient.DoTransaction("Do", nameof(Add), () => Add(a, b, context));
-
-                        //Thread.Sleep(5000);
-                    }
-                });
-            Console.ReadLine();
+                Thread.Sleep(5000);
+            }
         }
 
-        static void AtomicTest()
-        {
-            PureCatClient.LogEvent("SQL", nameof(AtomicTest), "0", "123444433");
-        }
 
         static CatContext DoTest()
         {
-            var times = _rand.Next(10);
-            //Thread.Sleep(times);
+            var times = _rand.Next(1000);
+            Thread.Sleep(times);
             PureCatClient.LogEvent("Do", nameof(DoTest), "0", $"sleep {times}");
-
             return PureCatClient.LogRemoteCallClient("callAdd");
         }
 
         static void Add(int a, int b, CatContext context = null)
         {
-            //Thread.Sleep(_rand.Next(10));
+            Thread.Sleep(_rand.Next(1000));
             PureCatClient.LogRemoteCallServer(context);
             PureCatClient.LogEvent("Do", nameof(Add), "0", $"{a} + {b} = {a + b}");
 
@@ -61,7 +47,7 @@ namespace PureCat.Demo
         }
         static void Add2(int a, int b, CatContext context = null)
         {
-            // Thread.Sleep(_rand.Next(10));
+            Thread.Sleep(_rand.Next(1000));
             PureCatClient.LogRemoteCallServer(context);
             PureCatClient.LogEvent("Do", nameof(Add2), "0", $"{a} + {b} = {a + b}");
         }
