@@ -2,7 +2,7 @@
 <package>
   <metadata>
     <id>PureCat</id>
-    <version>0.1.5.0-beta</version>
+    <version>0.1.6.0-beta</version>
     <title>PureCat</title>
     <authors>chinaboard</authors>
     <owners>chinaboard</owners>
@@ -12,7 +12,7 @@
 
     <releaseNotes>
       <![CDATA[
-        fix bug
+        add mergeTree
         ]]>
     </releaseNotes>
 
