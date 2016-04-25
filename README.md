@@ -13,9 +13,11 @@ Cat.Net客户端，参考了点评原生客户端和Jasmine的部分实现
 
 2、Heartbeat
 
-3、上下文串联(Context)
+3、Trace
 
-4、DoTransaction封装事务
+4、上下文串联(Context)
+
+5、DoTransaction封装事务
 
 
 ##测试中的功能
@@ -23,7 +25,7 @@ Cat.Net客户端，参考了点评原生客户端和Jasmine的部分实现
 
 2、TaggedTransaction
 
-3、Trace
+3、MergeTree
 
 4、客户端路由负载均衡
 
@@ -31,5 +33,3 @@ Cat.Net客户端，参考了点评原生客户端和Jasmine的部分实现
 
 ##开发中的事情
 1、重构_(:з」∠)_
-
-2、mergeTree功能移植
