@@ -127,7 +127,7 @@ namespace PureCat.Message.Spi.IO
                     var connPoolList = _connPool.ToList();
                     connPoolList.ForEach(kvp =>
                     {
-                        if (kvp.Value != null && !kvp.Value.Connected)
+                        if (kvp.Value == null || !kvp.Value.Connected)
                             _connPool[kvp.Key] = CreateChannel(kvp.Key);
                     });
 
@@ -146,11 +146,11 @@ namespace PureCat.Message.Spi.IO
                     try
                     {
                         TcpClient activeChannel = null;
-                        var connPoolList = _connPool.ToList();
 
-                        if (connPoolList.Count != 0)
+
+                        if (_connPool.Count != 0)
                         {
-                            Interlocked.Exchange(ref activeChannel, connPoolList[i % connPoolList.Count].Value);
+                            Interlocked.Exchange(ref activeChannel, _connPool.Values.ToList()[i % _connPool.Count]);
                         }
                         else
                         {
@@ -160,7 +160,7 @@ namespace PureCat.Message.Spi.IO
                         while (_queue.Count == 0 || activeChannel == null || !activeChannel.Connected)
                         {
                             Thread.Sleep(500);
-                            Interlocked.Exchange(ref activeChannel, connPoolList[i % connPoolList.Count].Value);
+                            Interlocked.Exchange(ref activeChannel, _connPool.Values.ToList()[i % _connPool.Count]);
                         }
 
                         IMessageTree tree = null;
