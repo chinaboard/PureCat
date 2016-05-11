@@ -13,6 +13,7 @@ namespace PureCat.Configuration
         private Random _random = new Random();
         private readonly object _lock = new object();
 
+        private Server _defaultServer = null;
         private List<Server> _server = new List<Server>();
 
         public ClientConfig(Domain domain = null, params Server[] serverList)
@@ -31,11 +32,8 @@ namespace PureCat.Configuration
 
         public void Initialize()
         {
-            lock (_lock)
-            {
-                LoadServerConfig();
-                RandomServer();
-            }
+            LoadServerConfig();
+            RandomServer();
         }
 
         public void RandomServer()
@@ -64,10 +62,6 @@ namespace PureCat.Configuration
             var serverListContent = CatHttpRequest.GetRequest(GetServerConfigUrl());
             if (string.IsNullOrWhiteSpace(serverListContent))
             {
-                serverListContent = CatHttpRequest.GetRequest(GetServerConfigUrl(9005));
-            }
-            if (string.IsNullOrWhiteSpace(serverListContent))
-            {
                 return;
             }
 
@@ -85,6 +79,7 @@ namespace PureCat.Configuration
                     var content = serverContent.Split(':');
                     var ip = content[0];
                     var port = content[1];
+                    //这边会有一个问题，就是http端口可能会发生变化，由于cat只返回ip，所以这个地方没法兼顾
                     serverList.Add(new Server(ip, int.Parse(port)));
                 }
                 catch
@@ -103,9 +98,10 @@ namespace PureCat.Configuration
             var serverList = _server.Where(server => server.Enabled);
             foreach (var server in serverList)
             {
+                _defaultServer = _defaultServer ?? server;
                 return $"http://{server.Ip}:{(webPort > 0 ? webPort : server.HttpPort)}/cat/s/router?domain={Domain.Id ?? "cat"}";
             }
-            return null;
+            return _defaultServer != null ? $"http://{_defaultServer.Ip}:{(webPort > 0 ? webPort : _defaultServer.HttpPort)}/cat/s/router?domain={Domain.Id ?? "cat"}" : null;
         }
     }
 }
