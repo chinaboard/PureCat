@@ -4,6 +4,6 @@
   <domain id="PureCat.Demo" enabled="true" queuesize="5000" pool="1"/>
   <servers>
     <!--<server ip="127.0.0.1" port="2280" />-->
-    <server ip="10.14.40.4" port="2280" http-port="8080" />
+    <server ip="127.0.0.1" port="2280" http-port="8080" />
   </servers>
 </doc>
