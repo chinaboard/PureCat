@@ -23,12 +23,12 @@ namespace PureCat.Message.Spi.Codec
         /// <returns> </returns>
         public int BytesBefore(byte separator)
         {
-            int count = 0;
-            long oldPosition = _memoryBuf.Position;
+            var count = 0;
+            var oldPosition = _memoryBuf.Position;
 
             while (_memoryBuf.Position < _memoryBuf.Length)
             {
-                int b = _memoryBuf.ReadByte();
+                var b = _memoryBuf.ReadByte();
 
                 if (b == -1)
                 {
@@ -131,9 +131,9 @@ namespace PureCat.Message.Spi.Codec
         /// <returns> </returns>
         public override string ToString()
         {
-            byte[] data = _memoryBuf.ToArray();
-            int offset = (int)_memoryBuf.Position;
-            string str = Encoding.UTF8.GetString(data, offset, data.Length - offset);
+            var data = _memoryBuf.ToArray();
+            var offset = (int)_memoryBuf.Position;
+            var str = Encoding.UTF8.GetString(data, offset, data.Length - offset);
 
             //ToArray本身就不为该Position，所以下一行代码多余
             //_mBuf.Seek(offset, SeekOrigin.Begin);

@@ -13,10 +13,10 @@ namespace PureCat
     {
 
         #region Other
-        private static readonly PureCatClient _instance = null;
-        private static readonly object _lock = new object();
+        private static readonly Lazy<PureCatClient> _lazyInstance = new Lazy<PureCatClient>(() => new PureCatClient());
+        private static PureCatClient _instance => _lazyInstance.Value;
 
-        public static string Version { get { return $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Version}"; } }
+        public static string Version => $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Version}";
 
         public bool Initialized { get; private set; } = false;
 
@@ -68,20 +68,6 @@ namespace PureCat
         #endregion
 
         #region Initialize
-
-        static PureCatClient()
-        {
-            if (_instance == null)
-            {
-                lock (_lock)
-                {
-                    if (_instance == null)
-                    {
-                        _instance = new PureCatClient();
-                    }
-                }
-            }
-        }
 
         /// <summary>
         /// 根据配置文件初始化PureCat，默认使用CatConfig.xml
