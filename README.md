@@ -4,9 +4,9 @@
 Cat常见问题：[wiki](https://github.com/chinaboard/PureCat/wiki/Cat%E7%AE%80%E5%8D%95%E6%96%87%E6%A1%A3)
 
 Cat.Net客户端，参考了点评原生客户端和Jasmine的部分实现
+本项目已经在产线稳定运行，仅供参考，本人无法承诺此项目稳定性可靠性
 
-
-开发环境VS2015，低于此版本的VS会提示语法错误
+已使用C# 7语法，建议使用VS2017查看源码
 
 ##已实现的功能
 1、Metrics
