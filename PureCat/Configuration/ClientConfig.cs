@@ -70,7 +70,7 @@ namespace PureCat.Configuration
 
             var serverListSplit = serverListContent.TrimEnd(';').Split(';');
 
-            List<Server> serverList = new List<Server>();
+            var serverList = new List<Server>();
 
             foreach (var serverContent in serverListSplit)
             {
@@ -99,9 +99,9 @@ namespace PureCat.Configuration
             foreach (var server in serverList)
             {
                 _defaultServer = _defaultServer ?? server;
-                return $"http://{server.Ip}:{(webPort > 0 ? webPort : server.HttpPort)}/cat/s/router?domain={Domain.Id ?? "cat"}";
+                return $"http://{server.Ip}:{(webPort > 0 ? webPort : server.HttpPort)}/cat/s/router?domain={Domain.Id ?? "cat"}&ip={AppEnv.IP}";
             }
-            return _defaultServer != null ? $"http://{_defaultServer.Ip}:{(webPort > 0 ? webPort : _defaultServer.HttpPort)}/cat/s/router?domain={Domain.Id ?? "cat"}" : null;
+            return _defaultServer != null ? $"http://{_defaultServer.Ip}:{(webPort > 0 ? webPort : _defaultServer.HttpPort)}/cat/s/router?domain={Domain.Id ?? "cat"}&ip={AppEnv.IP}" : null;
         }
     }
 }

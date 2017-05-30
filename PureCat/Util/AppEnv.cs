@@ -1,19 +1,11 @@
-﻿namespace PureCat.Util
+﻿using System;
+
+namespace PureCat.Util
 {
     public static class AppEnv
     {
-        public static string IP { get { return GetLocalIP(); } }
+        public static string IP => NetworkInterfaceManager.GetLocalHostAddress();
 
-        private static string GetLocalIP()
-        {
-            try
-            {
-                return NetworkInterfaceManager.GetLocalHostAddress();
-            }
-            catch
-            {
-                return string.Empty;
-            }
-        }
+        public static string MachineName => Environment.MachineName;
     }
 }
