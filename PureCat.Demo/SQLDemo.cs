@@ -3,11 +3,13 @@ using System.Data.Common;
 using System.Data.SqlClient;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 
 namespace PureCat.Demo
 {
     public static class SQLDemo
     {
+        private static readonly Random _rand = new Random();
 
         public static void Demo()
         {
@@ -20,6 +22,7 @@ namespace PureCat.Demo
                     LogEvent(conn, sql, null);
 
                     //do sql....
+                    Thread.Sleep(_rand.Next(2000));
                 }
             });
 
