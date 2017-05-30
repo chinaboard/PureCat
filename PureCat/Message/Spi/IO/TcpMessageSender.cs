@@ -2,7 +2,6 @@
 using PureCat.Configuration;
 using PureCat.Message.Spi.Codec;
 using PureCat.Util;
-using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Threading;
 using System.Linq;
@@ -36,10 +35,7 @@ namespace PureCat.Message.Spi.IO
             _maxQueueSize = clientConfig.Domain.MaxQueueSize;
         }
 
-        public virtual bool HasSendingMessage
-        {
-            get { return _queue.Count > 0 && _connPool.Count > 0; }
-        }
+        public virtual bool HasSendingMessage => _queue.Count > 0 && _connPool.Count > 0;
 
         public void Initialize()
         {
@@ -51,7 +47,7 @@ namespace PureCat.Message.Spi.IO
             ThreadPool.QueueUserWorkItem(ChannelManagementTask);
             Logger.Info("Thread(ChannelManagementTask) started.");
 
-            for (int i = 0; i < _clientConfig.Domain.ThreadPool; i++)
+            for (var i = 0; i < _clientConfig.Domain.ThreadPool; i++)
             {
                 ThreadPool.QueueUserWorkItem(AsynchronousSendTask, i);
                 Logger.Info($"Thread(AsynchronousSendTask-{i}) started.");
@@ -91,14 +87,7 @@ namespace PureCat.Message.Spi.IO
 
         public void Shutdown()
         {
-            try
-            {
-                _active = false;
-            }
-            catch
-            {
-                // ignore it
-            }
+            _active = false;
         }
 
         public void ServerManagementTask(object o)
@@ -111,7 +100,7 @@ namespace PureCat.Message.Spi.IO
                     _clientConfig.Servers.ForEach(server =>
                     {
                         if (!_connPool.ContainsKey(server))
-                            _connPool.GetOrAdd(server, CreateChannel(server));
+                            _connPool.GetOrAdd(server, _ => CreateChannel(server));
                     });
                 }
                 Thread.Sleep(60 * 1000); // every 60 seconds
@@ -163,9 +152,8 @@ namespace PureCat.Message.Spi.IO
                             Interlocked.Exchange(ref activeChannel, _connPool.Values.ToList()[i % _connPool.Count]);
                         }
 
-                        IMessageTree tree = null;
 
-                        if (_queue.TryDequeue(out tree))
+                        if (_queue.TryDequeue(out IMessageTree tree))
                         {
                             if (tree != null)
                             {
@@ -198,10 +186,7 @@ namespace PureCat.Message.Spi.IO
                         Thread.Sleep(5000);
                         continue;
                     }
-                    else
-                    {
-                        Send(tree);
-                    }
+                    Send(tree);
                 }
                 else
                 {
@@ -223,10 +208,7 @@ namespace PureCat.Message.Spi.IO
 
                 activeChannel.Client.Send(data);
 
-                if (_statistics != null)
-                {
-                    _statistics.OnBytes(data.Length);
-                }
+                _statistics?.OnBytes(data.Length);
             }
             else
             {
@@ -270,30 +252,22 @@ namespace PureCat.Message.Spi.IO
 
         private bool ShouldMerge()
         {
-            IMessageTree tree = null;
-            if (!_atomicTress.TryDequeue(out tree))
+            if (!_atomicTress.TryDequeue(out IMessageTree tree))
             {
                 return false;
             }
-            else
-            {
-                var firstTime = tree.Message.Timestamp;
-                var maxDuration = 1000 * 30;
 
-                if (MilliSecondTimer.CurrentTimeMillis - firstTime > maxDuration || _atomicTress.Count >= PureCatConstants.MAX_CHILD_NUMBER)
-                {
-                    return true;
-                }
-            }
-            return false;
+            var firstTime = tree.Message.Timestamp;
+            var maxDuration = 1000 * 30;
+
+            return MilliSecondTimer.CurrentTimeMillis - firstTime > maxDuration || _atomicTress.Count >= PureCatConstants.MAX_CHILD_NUMBER;
         }
 
         private IMessageTree MergeTree()
         {
             var max = PureCatConstants.MAX_CHILD_NUMBER;
             var tran = new DefaultTransaction("_CatMergeTree", "_CatMergeTree");
-            IMessageTree first = null;
-            if (!_atomicTress.TryDequeue(out first))
+            if (!_atomicTress.TryDequeue(out IMessageTree first))
             {
                 return null;
             }
@@ -308,21 +282,14 @@ namespace PureCat.Message.Spi.IO
 
             while (max-- >= 0)
             {
-                IMessageTree tree = null;
-                if (!_atomicTress.TryDequeue(out tree))
+                if (!_atomicTress.TryDequeue(out IMessageTree tree))
                 {
                     tran.DurationInMillis = (lastTimestamp - tran.Timestamp + lastDuration);
                     break;
                 }
                 lastTimestamp = tree.Message.Timestamp;
-                if (tree.Message is DefaultTransaction)
-                {
-                    lastDuration = ((DefaultTransaction)tree.Message).DurationInMillis;
-                }
-                else
-                {
-                    lastDuration = 0;
-                }
+                var message = tree.Message as DefaultTransaction;
+                lastDuration = message?.DurationInMillis ?? 0;
                 tran.AddChild(tree.Message);
             }
             first.Message = tran;
@@ -345,10 +312,7 @@ namespace PureCat.Message.Spi.IO
         {
             Interlocked.Increment(ref _errors);
 
-            if (_statistics != null)
-            {
-                _statistics.OnOverflowed();
-            }
+            _statistics?.OnOverflowed();
 
             if (Interlocked.Read(ref _errors) % 100 == 0)
             {

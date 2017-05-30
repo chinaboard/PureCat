@@ -35,16 +35,13 @@ namespace PureCat.Message.Spi.Internals
 
         #region IMessageManager Members
 
-        public virtual ClientConfig ClientConfig
-        {
-            get { return _clientConfig; }
-        }
+        public virtual ClientConfig ClientConfig => _clientConfig;
 
         public virtual ITransaction PeekTransaction
         {
             get
             {
-                Context ctx = GetContext();
+                var ctx = GetContext();
 
                 if (ctx == null)
                 {
@@ -61,7 +58,7 @@ namespace PureCat.Message.Spi.Internals
         {
             get
             {
-                Context ctx = _mContext.Value;
+                var ctx = _mContext.Value;
 
                 if (ctx == null)
                 {
@@ -106,28 +103,21 @@ namespace PureCat.Message.Spi.Internals
             return _mContext.Value != null;
         }
 
-        public virtual bool CatEnabled
-        {
-            get { return _clientConfig.Domain.Enabled && _mContext.Value != null; }
-        }
+        public virtual bool CatEnabled => _clientConfig.Domain.Enabled && _mContext.Value != null;
 
         public virtual void Add(IMessage message)
         {
-            Context ctx = GetContext();
+            var ctx = GetContext();
 
-            if (ctx != null)
-            {
-                ctx.Add(this, message);
-            }
+            ctx?.Add(this, message);
         }
 
         public void Bind(string tag, string title)
         {
-            ITaggedTransaction t = null;
 
-            if (_taggedTransactions.TryGetValue(tag, out t))
+            if (_taggedTransactions.TryGetValue(tag, out ITaggedTransaction t))
             {
-                IMessageTree tree = ThreadLocalMessageTree;
+                var tree = ThreadLocalMessageTree;
 
                 if (tree != null)
                 {
@@ -144,7 +134,7 @@ namespace PureCat.Message.Spi.Internals
 
         public virtual void Setup()
         {
-            Context ctx = new Context(_clientConfig.Domain.Id, _hostName,
+            var ctx = new Context(this, _clientConfig.Domain.Id, _hostName,
                                       NetworkInterfaceManager.GetLocalHostAddress());
 
             _mContext.Value = ctx;
@@ -152,16 +142,16 @@ namespace PureCat.Message.Spi.Internals
 
         public virtual void Start(ITransaction transaction, bool forked)
         {
-            Context ctx = GetContext();
+            var ctx = GetContext();
 
             if (ctx != null)
             {
-                ctx.Start(this, transaction, forked);
+                ctx.Start(transaction, forked);
 
-                if (transaction is DefaultTaggedTransaction)
+                var taggedTransaction = transaction as DefaultTaggedTransaction;
+                if (taggedTransaction != null)
                 {
-                    ITaggedTransaction tt = transaction as DefaultTaggedTransaction;
-                    _taggedTransactions[tt.Tag] = tt;
+                    _taggedTransactions[taggedTransaction.Tag] = taggedTransaction;
                 }
             }
             else if (_firstMessage)
@@ -173,11 +163,11 @@ namespace PureCat.Message.Spi.Internals
 
         public virtual void End(ITransaction transaction)
         {
-            Context ctx = GetContext();
+            var ctx = GetContext();
 
             if (ctx != null && transaction.Standalone)
             {
-                if (ctx.End(this, transaction))
+                if (ctx.End(transaction))
                 {
                     _mContext.Dispose();
                 }
@@ -202,10 +192,7 @@ namespace PureCat.Message.Spi.Internals
 
                 Reset();
 
-                if (_statistics != null)
-                {
-                    _statistics.OnSending();
-                }
+                _statistics?.OnSending();
             }
         }
 
@@ -213,7 +200,7 @@ namespace PureCat.Message.Spi.Internals
         {
             if (PureCatClient.IsInitialized())
             {
-                Context ctx = _mContext.Value;
+                var ctx = _mContext.Value;
 
                 if (ctx != null)
                 {
@@ -226,11 +213,8 @@ namespace PureCat.Message.Spi.Internals
 
         public void LinkAsRunAway(IForkedTransaction transaction)
         {
-            Context ctx = GetContext();
-            if (ctx != null)
-            {
-                ctx.LinkAsRunAway(this, transaction);
-            }
+            var ctx = GetContext();
+            ctx?.LinkAsRunAway(transaction);
         }
 
         public string NextMessageId()
@@ -244,14 +228,16 @@ namespace PureCat.Message.Spi.Internals
         {
             private readonly Stack<ITransaction> _mStack;
             private readonly IMessageTree _mTree;
+            private readonly DefaultMessageManager _manager;
 
-            public Context(string domain, string hostName, string ipAddress)
+            public Context(DefaultMessageManager manager, string domain, string hostName, string ipAddress)
             {
+                _manager = manager;
                 _mTree = new DefaultMessageTree();
                 _mStack = new Stack<ITransaction>();
 
-                Thread thread = Thread.CurrentThread;
-                string groupName = Thread.GetDomain().FriendlyName;
+                var thread = Thread.CurrentThread;
+                var groupName = Thread.GetDomain().FriendlyName;
 
                 _mTree.ThreadGroupName = groupName;
                 _mTree.ThreadId = thread.ManagedThreadId.ToString(CultureInfo.InvariantCulture);
@@ -262,10 +248,7 @@ namespace PureCat.Message.Spi.Internals
                 _mTree.IpAddress = ipAddress;
             }
 
-            public IMessageTree Tree
-            {
-                get { return _mTree; }
-            }
+            public IMessageTree Tree => _mTree;
 
             /// <summary>
             ///   添加Event和Heartbeat
@@ -276,14 +259,14 @@ namespace PureCat.Message.Spi.Internals
             {
                 if ((_mStack.Count == 0))
                 {
-                    IMessageTree tree = _mTree.Copy();
+                    var tree = _mTree.Copy();
                     tree.MessageId = manager.NextMessageId();
                     tree.Message = message;
                     manager.Flush(tree);
                 }
                 else
                 {
-                    ITransaction entry = _mStack.Peek();
+                    var entry = _mStack.Peek();
                     entry.AddChild(message);
                 }
             }
@@ -291,24 +274,23 @@ namespace PureCat.Message.Spi.Internals
             ///<summary>
             ///  return true means the transaction has been flushed.
             ///</summary>
-            ///<param name="manager"> </param>
             ///<param name="transaction"> </param>
             ///<returns> true if message is flushed, false otherwise </returns>
-            public bool End(DefaultMessageManager manager, ITransaction transaction)
+            public bool End(ITransaction transaction)
             {
                 if (_mStack.Count != 0)
                 {
-                    ITransaction current = _mStack.Pop();
+                    var current = _mStack.Pop();
 
                     if (transaction == current)
                     {
-                        ValidateTransaction(manager, _mStack.Count == 0 ? null : _mStack.Peek(), current);
+                        ValidateTransaction(_mStack.Count == 0 ? null : _mStack.Peek(), current);
                     }
                     else
                     {
                         while (transaction != current && _mStack.Count != 0)
                         {
-                            ValidateTransaction(manager, _mStack.Peek(), current);
+                            ValidateTransaction(_mStack.Peek(), current);
                             current = _mStack.Pop();
                         }
                     }
@@ -316,11 +298,11 @@ namespace PureCat.Message.Spi.Internals
 
                     if (_mStack.Count == 0)
                     {
-                        IMessageTree tree = _mTree.Copy();
+                        var tree = _mTree.Copy();
                         _mTree.MessageId = null;
                         _mTree.Message = null;
 
-                        manager.Flush(tree);
+                        _manager.Flush(tree);
                         return true;
                     }
                 }
@@ -341,14 +323,15 @@ namespace PureCat.Message.Spi.Internals
             /// </summary>
             /// <param name="manager"> </param>
             /// <param name="transaction"> </param>
-            public void Start(DefaultMessageManager manager, ITransaction transaction, bool forked)
+            /// <param name="forked"></param>
+            public void Start(ITransaction transaction, bool forked)
             {
                 if (_mStack.Count != 0)
                 {
                     if (!(transaction is DefaultForkedTransaction))
                     {
                         ITransaction parent = _mStack.Peek();
-                        AddTransactionChild(manager, transaction, parent);
+                        AddTransactionChild(transaction, parent);
                     }
                 }
                 else
@@ -362,9 +345,9 @@ namespace PureCat.Message.Spi.Internals
                 }
             }
 
-            internal void LinkAsRunAway(DefaultMessageManager manager, IForkedTransaction transaction)
+            internal void LinkAsRunAway(IForkedTransaction transaction)
             {
-                IEvent @event = new DefaultEvent(PureCatConstants.TYPE_REMOTE_CALL, "RunAway");
+                var @event = new DefaultEvent(PureCatConstants.TYPE_REMOTE_CALL, "RunAway");
 
                 @event.AddData(transaction.ForkedMessageId, $"{transaction.Type}:{transaction.Name}");
                 @event.Timestamp = transaction.Timestamp;
@@ -373,7 +356,7 @@ namespace PureCat.Message.Spi.Internals
 
                 transaction.Standalone = true;
 
-                manager.Add(@event);
+                _manager.Add(@event);
             }
             private void MarkAsRunAway(ITransaction parent, DefaultTaggedTransaction transaction)
             {
@@ -389,7 +372,7 @@ namespace PureCat.Message.Spi.Internals
 
             private void MarkAsNotCompleted(DefaultTransaction transaction)
             {
-                IEvent notCompleteEvent = new DefaultEvent("CAT", "BadInstrument") { Status = "TransactionNotCompleted" };
+                var notCompleteEvent = new DefaultEvent("CAT", "BadInstrument") { Status = "TransactionNotCompleted" };
                 notCompleteEvent.Complete();
                 transaction.AddChild(notCompleteEvent);
                 transaction.Complete();
@@ -397,19 +380,19 @@ namespace PureCat.Message.Spi.Internals
 
 
             //验证Transaction
-            internal void ValidateTransaction(DefaultMessageManager manager, ITransaction parent, ITransaction transaction)
+            internal void ValidateTransaction(ITransaction parent, ITransaction transaction)
             {
                 if (transaction.Standalone)
                 {
-                    IList<IMessage> children = transaction.Children;
-                    int len = children.Count;
-                    for (int i = 0; i < len; i++)
+                    var children = transaction.Children;
+                    var len = children.Count;
+                    for (var i = 0; i < len; i++)
                     {
                         IMessage message = children[i];
 
                         if (message is ITransaction)
                         {
-                            ValidateTransaction(manager, transaction, message as ITransaction);
+                            ValidateTransaction(transaction, message as ITransaction);
                         }
                     }
 
@@ -421,7 +404,7 @@ namespace PureCat.Message.Spi.Internals
                     {
                         if (transaction is DefaultForkedTransaction)
                         {
-                            LinkAsRunAway(manager, transaction as DefaultForkedTransaction);
+                            LinkAsRunAway(transaction as DefaultForkedTransaction);
                         }
                         else if (transaction is DefaultTaggedTransaction)
                         {
@@ -431,74 +414,73 @@ namespace PureCat.Message.Spi.Internals
                 }
             }
 
-            private void AddTransactionChild(DefaultMessageManager manager, IMessage message, ITransaction transaction)
+            private void AddTransactionChild(IMessage message, ITransaction transaction)
             {
-                long treePeriod = TrimToHour(_mTree.Message.Timestamp);
-                long messagePeriod = TrimToHour(message.Timestamp - 10 * 1000L); // 10 seconds extra time allowed
+                var treePeriod = TrimToHour(_mTree.Message.Timestamp);
+                var messagePeriod = TrimToHour(message.Timestamp - 10 * 1000L); // 10 seconds extra time allowed
 
                 if (treePeriod < messagePeriod)
                 {
-                    TruncateAndFlush(manager, message.Timestamp);
+                    TruncateAndFlush(message.Timestamp);
                 }
 
                 transaction.AddChild(message);
             }
 
-            private void TruncateAndFlush(DefaultMessageManager manager, long timestamp)
+            private void TruncateAndFlush(long timestamp)
             {
-                IMessageTree tree = _mTree;
-                Stack<ITransaction> stack = _mStack;
-                IMessage message = tree.Message;
+                var tree = _mTree;
+                var stack = _mStack;
+                var message = tree.Message;
 
                 if (message is DefaultTransaction)
                 {
-                    if (tree.MessageId == null)
-                    {
-                        tree.MessageId = manager.NextMessageId();
-                    }
+                    var id = tree.MessageId ?? _manager.NextMessageId();
+                    var rootId = tree.RootMessageId;
+                    var childId = _manager.NextMessageId();
 
-                    string rootId = tree.RootMessageId;
-                    string childId = manager.NextMessageId();
-
-                    DefaultTransaction source = message as DefaultTransaction;
-                    DefaultTransaction target = new DefaultTransaction(source.Type, source.Name, manager);
+                    var source = message as DefaultTransaction;
+                    var target = new DefaultTransaction(source.Type, source.Name, _manager);
                     target.Timestamp = source.Timestamp;
                     target.DurationInMicros = source.DurationInMicros;
                     target.AddData(source.Data);
                     target.Status = PureCatConstants.SUCCESS;
 
-                    MigrateMessage(manager, stack, source, target, 1);
+                    MigrateMessage(stack, source, target, 1);
 
                     var list = stack.ToList();
 
-                    for (int i = list.Count - 1; i >= 0; i--)
+                    for (var i = list.Count - 1; i >= 0; i--)
                     {
-                        DefaultTransaction tran = list[i] as DefaultTransaction;
-                        tran.Timestamp = timestamp;
-                        tran.DurationInMicros = -1;
+                        var tran = list[i] as DefaultTransaction;
+                        if (tran != null)
+                        {
+                            tran.Timestamp = timestamp;
+                            tran.DurationInMicros = -1;
+                        }
                     }
 
-                    IEvent next = new DefaultEvent(PureCatConstants.TYPE_REMOTE_CALL, "Next");
+                    var next = new DefaultEvent(PureCatConstants.TYPE_REMOTE_CALL, "Next");
                     next.AddData(childId);
                     next.Status = PureCatConstants.SUCCESS;
                     target.AddChild(next);
 
-                    IMessageTree t = tree.Copy();
+                    var t = tree.Copy();
 
                     t.Message = target;
 
                     _mTree.MessageId = childId;
-                    _mTree.ParentMessageId = tree.MessageId;
+                    _mTree.ParentMessageId = id;
                     _mTree.RootMessageId = rootId ?? tree.MessageId;
 
-                    manager.Flush(t);
+                    _manager.Flush(t);
                 }
             }
 
-            private void MigrateMessage(DefaultMessageManager manager, Stack<ITransaction> stack, ITransaction source, ITransaction target, int level)
+            private void MigrateMessage(Stack<ITransaction> stack, ITransaction source, ITransaction target, int level)
             {
-                ITransaction current = level < stack.Count ? stack.ToList()[level] : null;
-                bool shouldKeep = false;
+                var current = level < stack.Count ? stack.ToList()[level] : null;
+                var shouldKeep = false;
 
                 foreach (IMessage child in source.Children)
                 {
@@ -508,7 +490,7 @@ namespace PureCat.Message.Spi.Internals
                     }
                     else
                     {
-                        DefaultTransaction cloned = new DefaultTransaction(current.Type, current.Name, manager);
+                        DefaultTransaction cloned = new DefaultTransaction(current.Type, current.Name, _manager);
 
                         cloned.Timestamp = current.Timestamp;
                         cloned.DurationInMicros = current.DurationInMicros;
@@ -516,7 +498,7 @@ namespace PureCat.Message.Spi.Internals
                         cloned.Status = PureCatConstants.SUCCESS;
 
                         target.AddChild(cloned);
-                        MigrateMessage(manager, stack, current, cloned, level + 1);
+                        MigrateMessage(stack, current, cloned, level + 1);
 
                         shouldKeep = true;
                     }
@@ -534,7 +516,6 @@ namespace PureCat.Message.Spi.Internals
                 return timestamp - timestamp % (3600 * 1000L);
             }
         }
-
 
     }
     #endregion

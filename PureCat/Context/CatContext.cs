@@ -1,12 +1,11 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 
 namespace PureCat.Context
 {
     public class CatContext
     {
-        private Dictionary<string, string> _dict = new Dictionary<string, string>();
+        private readonly Dictionary<string, string> _dict = new Dictionary<string, string>();
 
         private const string _catRootId = "X-Cat-RootId";
         private const string _catParentId = "X-Cat-ParentId";
@@ -24,14 +23,20 @@ namespace PureCat.Context
 
         public string this[string key]
         {
-            get { return _dict.ContainsKey(key) ? _dict[key] : null; }
-            set { _dict[key] = value; }
+            get
+            {
+                _dict.TryGetValue(key, out string result);
+                return result;
+            }
+            set
+            {
+                _dict[key] = value;
+            }
         }
 
         public IEnumerator<KeyValuePair<string, string>> GetEnumerator()
         {
-            foreach (var item in _dict)
-                yield return item;
+            return ((IEnumerable<KeyValuePair<string, string>>)_dict).GetEnumerator();
         }
 
         public override string ToString()

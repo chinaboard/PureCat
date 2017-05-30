@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Threading;
+﻿using System.Threading;
 using System.Collections.Concurrent;
 
 namespace PureCat.Util
@@ -13,8 +12,7 @@ namespace PureCat.Util
         {
             get
             {
-                T val = null;
-                _mValues.TryGetValue(Thread.CurrentThread.ManagedThreadId, out val);
+                _mValues.TryGetValue(Thread.CurrentThread.ManagedThreadId, out T val);
                 return val;
             }
             set
@@ -25,8 +23,7 @@ namespace PureCat.Util
 
         public void Dispose()
         {
-            T obj;
-            _mValues.TryRemove(Thread.CurrentThread.ManagedThreadId, out obj);
+            _mValues.TryRemove(Thread.CurrentThread.ManagedThreadId, out T obj);
         }
     }
 }

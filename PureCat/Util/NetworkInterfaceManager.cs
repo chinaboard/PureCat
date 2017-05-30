@@ -1,39 +1,24 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Net.Sockets;
 using System.Net;
+using System.Text;
 
 namespace PureCat.Util
 {
     public class NetworkInterfaceManager
     {
+
+        private static readonly string _localIp = Dns.GetHostEntry(Dns.GetHostName()).AddressList
+                .Where(ip => ip.AddressFamily == AddressFamily.InterNetwork)
+                .Min(p => p.ToString());
+
         public static string GetLocalHostName()
         {
             return Dns.GetHostName();
         }
 
-        public static string GetLocalHostAddress()
-        {
-            IPHostEntry host = Dns.GetHostEntry(GetLocalHostName());
+        public static string GetLocalHostAddress() => _localIp;
 
-            foreach (IPAddress ip in host.AddressList.Where(ip => ip.AddressFamily == AddressFamily.InterNetwork))
-            {
-                return ip.ToString();
-            }
-
-            throw new NotSupportedException("No IP address found");
-        }
-
-        public static byte[] GetAddressBytes()
-        {
-            IPHostEntry host = Dns.GetHostEntry(GetLocalHostName());
-
-            foreach (IPAddress ip in host.AddressList.Where(ip => ip.AddressFamily == AddressFamily.InterNetwork))
-            {
-                return ip.GetAddressBytes();
-            }
-
-            throw new NotSupportedException("No IP address found");
-        }
+        public static byte[] GetAddressBytes() => Encoding.UTF8.GetBytes(_localIp);
     }
 }
