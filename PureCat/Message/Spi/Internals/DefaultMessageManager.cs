@@ -452,11 +452,7 @@ namespace PureCat.Message.Spi.Internals
 
                 if (message is DefaultTransaction)
                 {
-                    if (tree.MessageId == null)
-                    {
-                        tree.MessageId = manager.NextMessageId();
-                    }
-
+                    string id = tree.MessageId ?? manager.NextMessageId();
                     string rootId = tree.RootMessageId;
                     string childId = manager.NextMessageId();
 
@@ -488,7 +484,7 @@ namespace PureCat.Message.Spi.Internals
                     t.Message = target;
 
                     _mTree.MessageId = childId;
-                    _mTree.ParentMessageId = tree.MessageId;
+                    _mTree.ParentMessageId = id;
                     _mTree.RootMessageId = rootId ?? tree.MessageId;
 
                     manager.Flush(t);
