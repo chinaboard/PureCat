@@ -55,7 +55,7 @@ namespace PureCat.Message.Spi.Heartbeat
             Version = _computer.OSVersion;
             ProcessCount = Environment.ProcessorCount;
             TotalMemory = _computer.TotalPhysicalMemory;
-            FreeMemory = _computer.TotalPhysicalMemory - _computer.AvailablePhysicalMemory;
+            FreeMemory = _computer.AvailablePhysicalMemory;
             ProcessTime = Process.GetCurrentProcess().TotalProcessorTime.Ticks / TimeSpan.TicksPerSecond;
         }
     }
