@@ -2,6 +2,7 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace PureCat.Configuration
 {
@@ -30,9 +31,9 @@ namespace PureCat.Configuration
         /// </summary>
         public List<Server> Servers { get { return _server; } set { lock (_lock) _server = value; } }
 
-        public void Initialize()
+        public async Task Initialize()
         {
-            LoadServerConfig();
+            await LoadServerConfig();
             RandomServer();
         }
 
@@ -57,16 +58,15 @@ namespace PureCat.Configuration
             }
         }
 
-        public void LoadServerConfig()
+        public async Task LoadServerConfig()
         {
-            var serverListContent = CatHttpRequest.GetRequest(GetServerConfigUrl());
+            var serverListContent = await CatHttpRequest.GetRequest(GetServerConfigUrl());
             if (string.IsNullOrWhiteSpace(serverListContent))
             {
                 return;
             }
 
             Logger.Info($"Get servers : {serverListContent}");
-
 
             var serverListSplit = serverListContent.TrimEnd(';').Split(';');
 

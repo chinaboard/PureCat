@@ -1,32 +1,30 @@
 ﻿using System;
-using System.IO;
-using System.Net;
+using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace PureCat.Util
 {
     internal class CatHttpRequest
     {
-        public static string GetRequest(string url)
+        public static async Task<string> GetRequest(string url)
         {
+            var client = new HttpClient();
+
             try
             {
-                var request = (HttpWebRequest)WebRequest.Create(url);
-                request.Timeout = 5000;
-                request.Method = "GET";
-                request.Headers[HttpRequestHeader.IfNoneMatch] = Guid.NewGuid().ToString();
-                using (var response = request.GetResponse())
-                {
-                    using (var stream = response.GetResponseStream())
-                    {
-                        var reader = new StreamReader(stream);
-                        var text = reader.ReadToEnd();
-                        return text;
-                    }
-                }
+                client.Timeout = TimeSpan.FromSeconds(5);
+
+                client.DefaultRequestHeaders.IfNoneMatch.TryParseAdd(Guid.NewGuid().ToString());
+
+                return await client.GetStringAsync(url);
             }
             catch
             {
                 return null;
+            }
+            finally
+            {
+                client.Dispose();
             }
         }
     }

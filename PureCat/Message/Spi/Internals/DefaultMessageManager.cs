@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Collections.Concurrent;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace PureCat.Message.Spi.Internals
 {
@@ -94,7 +95,11 @@ namespace PureCat.Message.Spi.Internals
             _factory.Initialize(_clientConfig.Domain.Id);
 
             // start status update task
-            ThreadPool.QueueUserWorkItem(_statusUpdateTask.Run);
+#if NET40
+            TaskEx.Run(_statusUpdateTask.Run);
+#else
+            Task.Run(_statusUpdateTask.Run);
+#endif
             Logger.Info("Thread(StatusUpdateTask) started.");
         }
 
@@ -114,7 +119,6 @@ namespace PureCat.Message.Spi.Internals
 
         public void Bind(string tag, string title)
         {
-
             if (_taggedTransactions.TryGetValue(tag, out ITaggedTransaction t))
             {
                 var tree = ThreadLocalMessageTree;
@@ -174,7 +178,8 @@ namespace PureCat.Message.Spi.Internals
             }
         }
 
-        #endregion
+        #endregion IMessageManager Members
+
         public MessageIdFactory GetMessageIdFactory()
         {
             return _factory;
@@ -295,7 +300,6 @@ namespace PureCat.Message.Spi.Internals
                         }
                     }
 
-
                     if (_mStack.Count == 0)
                     {
                         var tree = _mTree.Copy();
@@ -358,6 +362,7 @@ namespace PureCat.Message.Spi.Internals
 
                 _manager.Add(@event);
             }
+
             private void MarkAsRunAway(ITransaction parent, DefaultTaggedTransaction transaction)
             {
                 if (!transaction.HasChildren())
@@ -377,7 +382,6 @@ namespace PureCat.Message.Spi.Internals
                 transaction.AddChild(notCompleteEvent);
                 transaction.Complete();
             }
-
 
             //验证Transaction
             internal void ValidateTransaction(ITransaction parent, ITransaction transaction)
@@ -516,7 +520,7 @@ namespace PureCat.Message.Spi.Internals
                 return timestamp - timestamp % (3600 * 1000L);
             }
         }
-
     }
-    #endregion
+
+    #endregion Nested type: Context
 }
