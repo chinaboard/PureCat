@@ -18,7 +18,7 @@ namespace PureCat.Message.Spi
         ///<param name="type"> event type </param>
         ///<param name="name"> event name </param>
         ///<param name="status"> PureCatConstants.SUCCESS or "0" means success, otherwise means error code </param>
-        ///<param name="nameValuePairs"> name value pairs in the format of "a=1&b=2&..." </param>
+        ///<param name="nameValuePairs"> name value pairs in the format of "a=1&amp;b=2&amp;..." </param>
         void LogEvent(string type, string name, string status, string nameValuePairs);
 
         ///<summary>
@@ -27,7 +27,7 @@ namespace PureCat.Message.Spi
         ///<param name="type"> trace type </param>
         ///<param name="name"> trace name </param>
         ///<param name="status"> PureCatConstants.SUCCESS or "0" means success, otherwise means error code </param>
-        ///<param name="nameValuePairs"> name value pairs in the format of "a=1&b=2&..." </param>
+        ///<param name="nameValuePairs"> name value pairs in the format of "a=1&amp;b=2&amp;..." </param>
         void LogTrace(string type, string name, string status, string nameValuePairs);
 
         ///<summary>
@@ -36,7 +36,7 @@ namespace PureCat.Message.Spi
         ///<param name="type"> heartbeat type </param>
         ///<param name="name"> heartbeat name </param>
         ///<param name="status"> PureCatConstants.SUCCESS or "0" means success, otherwise means error code </param>
-        ///<param name="nameValuePairs"> name value pairs in the format of "a=1&b=2&..." </param>
+        ///<param name="nameValuePairs"> name value pairs in the format of "a=1&amp;b=2&amp;..." </param>
         void LogHeartbeat(string type, string name, string status, string nameValuePairs);
 
         /// <summary>
@@ -44,7 +44,7 @@ namespace PureCat.Message.Spi
         /// </summary>
         /// <param name="name">metric name</param>
         /// <param name="status">PureCatConstants.SUCCESS or "0" means success, otherwise means error code</param>
-        /// <param name="nameValuePairs">name value pairs in the format of "a=1&b=2&..."</param>
+        /// <param name="nameValuePairs">name value pairs in the format of "a=1&amp;b=2&amp;..."</param>
         void LogMetric(string name, string status, string nameValuePairs);
 
         ///<summary>
@@ -98,6 +98,5 @@ namespace PureCat.Message.Spi
         /// <param name="tag">taggedTransaction tag</param>
         /// <returns></returns>
         ITaggedTransaction NewTaggedTransaction(string type, string name, string tag);
-
     }
 }

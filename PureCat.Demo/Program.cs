@@ -1,17 +1,15 @@
 ﻿using PureCat.Context;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace PureCat.Demo
 {
-    class Program
+    internal class Program
     {
-        static Random _rand = new Random();
-        static void Main(string[] args)
+        private static Random _rand = new Random();
+
+        private static void Main(string[] args)
         {
             PureCatClient.Initialize();
             while (true)
@@ -28,8 +26,7 @@ namespace PureCat.Demo
             }
         }
 
-
-        static CatContext DoTest()
+        private static CatContext DoTest()
         {
             var times = _rand.Next(1000);
             Thread.Sleep(times);
@@ -37,7 +34,7 @@ namespace PureCat.Demo
             return PureCatClient.LogRemoteCallClient("callAdd");
         }
 
-        static void Add(int a, int b, CatContext context = null)
+        private static void Add(int a, int b, CatContext context = null)
         {
             Thread.Sleep(_rand.Next(1000));
             PureCatClient.LogRemoteCallServer(context);
@@ -45,7 +42,8 @@ namespace PureCat.Demo
 
             Task.Factory.StartNew(() => PureCatClient.DoTransaction("Do", nameof(Add2), () => PureCatClient.LogRemoteCallClient("callAdd2")));
         }
-        static void Add2(int a, int b, CatContext context = null)
+
+        private static void Add2(int a, int b, CatContext context = null)
         {
             Thread.Sleep(_rand.Next(1000));
             PureCatClient.LogRemoteCallServer(context);

@@ -6,6 +6,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Linq;
 using System.Collections.Concurrent;
+using System.Threading.Tasks;
 using PureCat.Message.Internals;
 
 namespace PureCat.Message.Spi.IO
@@ -41,19 +42,35 @@ namespace PureCat.Message.Spi.IO
         {
             _active = true;
 
-            ThreadPool.QueueUserWorkItem(ServerManagementTask);
+#if NET40
+            TaskEx.Run(ServerManagementTask);
+#else
+            Task.Run(ServerManagementTask);
+#endif
             Logger.Info("Thread(ServerManagementTask) started.");
 
-            ThreadPool.QueueUserWorkItem(ChannelManagementTask);
+#if NET40
+            TaskEx.Run(ChannelManagementTask);
+#else
+            Task.Run(ChannelManagementTask);
+#endif
             Logger.Info("Thread(ChannelManagementTask) started.");
 
             for (var i = 0; i < _clientConfig.Domain.ThreadPool; i++)
             {
-                ThreadPool.QueueUserWorkItem(AsynchronousSendTask, i);
+#if NET40
+                TaskEx.Run(() => AsynchronousSendTask(i));
+#else
+                Task.Run(() => AsynchronousSendTask(i));
+#endif
                 Logger.Info($"Thread(AsynchronousSendTask-{i}) started.");
             }
 
-            ThreadPool.QueueUserWorkItem(MergeAtomicTask);
+#if NET40
+            TaskEx.Run(MergeAtomicTask);
+#else
+            Task.Run(MergeAtomicTask);
+#endif
             Logger.Info("Thread(MergeAtomicTask) started.");
         }
 
@@ -90,24 +107,29 @@ namespace PureCat.Message.Spi.IO
             _active = false;
         }
 
-        public void ServerManagementTask(object o)
+        public async Task ServerManagementTask()
         {
             while (true)
             {
                 if (_active)
                 {
-                    _clientConfig.Initialize();
+                    await _clientConfig.Initialize();
                     _clientConfig.Servers.ForEach(server =>
                     {
                         if (!_connPool.ContainsKey(server))
                             _connPool.GetOrAdd(server, _ => CreateChannel(server));
                     });
                 }
-                Thread.Sleep(60 * 1000); // every 60 seconds
+
+#if NET40
+                await TaskEx.Delay(60 * 1000); // every 60 seconds
+#else
+                await Task.Delay(60 * 1000); // every 60 seconds
+#endif
             }
         }
 
-        public void ChannelManagementTask(object o)
+        public async Task ChannelManagementTask()
         {
             while (true)
             {
@@ -119,15 +141,18 @@ namespace PureCat.Message.Spi.IO
                         if (kvp.Value == null || !kvp.Value.Connected)
                             _connPool[kvp.Key] = CreateChannel(kvp.Key);
                     });
-
                 }
-                Thread.Sleep(5 * 1000); // every 5 seconds
+
+#if NET40
+                await TaskEx.Delay(5 * 1000); // every 5 seconds
+#else
+                await Task.Delay(5 * 1000); // every 5 seconds
+#endif
             }
         }
 
-        public void AsynchronousSendTask(object state)
+        public async Task AsynchronousSendTask(int index)
         {
-            var i = (int)state;
             while (true)
             {
                 if (_active)
@@ -136,28 +161,34 @@ namespace PureCat.Message.Spi.IO
                     {
                         TcpClient activeChannel = null;
 
-
                         if (_connPool.Count != 0)
                         {
-                            Interlocked.Exchange(ref activeChannel, _connPool.Values.ToList()[i % _connPool.Count]);
+                            Interlocked.Exchange(ref activeChannel, _connPool.Values.ToList()[index % _connPool.Count]);
                         }
                         else
                         {
-                            Thread.Sleep(100);
+#if NET40
+                            await TaskEx.Delay(100);
+#else
+                            await Task.Delay(100);
+#endif
                             continue;
                         }
                         while (_queue.Count == 0 || activeChannel == null || !activeChannel.Connected)
                         {
-                            Thread.Sleep(500);
-                            Interlocked.Exchange(ref activeChannel, _connPool.Values.ToList()[i % _connPool.Count]);
+#if NET40
+                            await TaskEx.Delay(500);
+#else
+                            await Task.Delay(500);
+#endif
+                            Interlocked.Exchange(ref activeChannel, _connPool.Values.ToList()[index % _connPool.Count]);
                         }
-
 
                         if (_queue.TryDequeue(out IMessageTree tree))
                         {
                             if (tree != null)
                             {
-                                SendInternal(tree, activeChannel);
+                                await SendInternal(tree, activeChannel);
                                 tree.Message = null;
                             }
                         }
@@ -169,12 +200,16 @@ namespace PureCat.Message.Spi.IO
                 }
                 else
                 {
-                    Thread.Sleep(5 * 1000);
+#if NET40
+                    await TaskEx.Delay(5 * 1000);
+#else
+                    await Task.Delay(5 * 1000);
+#endif
                 }
             }
         }
 
-        public void MergeAtomicTask(object o)
+        public async Task MergeAtomicTask()
         {
             while (true)
             {
@@ -183,21 +218,28 @@ namespace PureCat.Message.Spi.IO
                     var tree = MergeTree();
                     if (tree == null)
                     {
-                        Thread.Sleep(5000);
+#if NET40
+                        await TaskEx.Delay(5000);
+#else
+                        await Task.Delay(5000);
+#endif
                         continue;
                     }
                     Send(tree);
                 }
                 else
                 {
-                    Thread.Sleep(100);
+#if NET40
+                    await TaskEx.Delay(100);
+#else
+                    await Task.Delay(100);
+#endif
                 }
             }
         }
 
-        private void SendInternal(IMessageTree tree, TcpClient activeChannel)
+        private async Task SendInternal(IMessageTree tree, TcpClient activeChannel)
         {
-
             if (activeChannel != null && activeChannel.Connected)
             {
                 var buf = new ChannelBuffer(8192);
@@ -206,7 +248,12 @@ namespace PureCat.Message.Spi.IO
 
                 var data = buf.ToArray();
 
-                activeChannel.Client.Send(data);
+                await Task.Factory.FromAsync((buffer, callback, state) =>
+                        activeChannel.Client.BeginSend(buffer, 0, buffer.Length, SocketFlags.None, callback, state),
+                    activeChannel.Client.EndSend,
+                    data,
+                    null);
+                //activeChannel.Client.Send(data);
 
                 _statistics?.OnBytes(data.Length);
             }

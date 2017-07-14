@@ -3,6 +3,7 @@ using PureCat.Message.Spi.Heartbeat.Extend;
 using PureCat.Util;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace PureCat.Message.Spi.Internals
 {
@@ -26,7 +27,7 @@ namespace PureCat.Message.Spi.Internals
             }
         }
 
-        public void Run(object o)
+        public async Task Run()
         {
             while (true)
             {
@@ -35,7 +36,11 @@ namespace PureCat.Message.Spi.Internals
 
                 if (!PureCatClient.IsInitialized())
                 {
-                    Thread.Sleep(5000);
+#if NET40
+                    await TaskEx.Delay(5000);
+#else
+                    await Task.Delay(5000);
+#endif
                     continue;
                 }
 
@@ -46,7 +51,11 @@ namespace PureCat.Message.Spi.Internals
                     PureCatClient.GetProducer().LogEvent("System", $"PureCat.Version : {PureCatClient.Version}", PureCatConstants.SUCCESS, PureCatClient.Version);
                 });
 
-                Thread.Sleep(60000);
+#if NET40
+                await TaskEx.Delay(60000);
+#else
+                await Task.Delay(60000);
+#endif
             }
         }
     }
