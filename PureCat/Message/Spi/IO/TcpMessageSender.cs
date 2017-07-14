@@ -151,7 +151,7 @@ namespace PureCat.Message.Spi.IO
             }
         }
 
-        public async Task AsynchronousSendTask(int index)
+        public async Task AsynchronousSendTask(int i)
         {
             while (true)
             {
@@ -163,7 +163,7 @@ namespace PureCat.Message.Spi.IO
 
                         if (_connPool.Count != 0)
                         {
-                            Interlocked.Exchange(ref activeChannel, _connPool.Values.ToList()[index % _connPool.Count]);
+                            Interlocked.Exchange(ref activeChannel, _connPool.Values.ToList()[i % _connPool.Count]);
                         }
                         else
                         {
@@ -181,7 +181,7 @@ namespace PureCat.Message.Spi.IO
 #else
                             await Task.Delay(500);
 #endif
-                            Interlocked.Exchange(ref activeChannel, _connPool.Values.ToList()[index % _connPool.Count]);
+                            Interlocked.Exchange(ref activeChannel, _connPool.Values.ToList()[i % _connPool.Count]);
                         }
 
                         if (_queue.TryDequeue(out IMessageTree tree))
@@ -253,7 +253,6 @@ namespace PureCat.Message.Spi.IO
                     activeChannel.Client.EndSend,
                     data,
                     null);
-                //activeChannel.Client.Send(data);
 
                 _statistics?.OnBytes(data.Length);
             }
