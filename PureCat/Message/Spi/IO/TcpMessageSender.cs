@@ -59,11 +59,12 @@ namespace PureCat.Message.Spi.IO
             for (var i = 0; i < _clientConfig.Domain.ThreadPool; i++)
             {
 #if NET40
-                TaskEx.Run(() => AsynchronousSendTask(i));
+                var tmp = i;
+                TaskEx.Run(() => AsynchronousSendTask(tmp));
 #else
-                Task.Run(() => AsynchronousSendTask(i));
+                Task.Run(() => AsynchronousSendTask(tmp));
 #endif
-                Logger.Info($"Thread(AsynchronousSendTask-{i}) started.");
+                Logger.Info($"Thread(AsynchronousSendTask-{tmp}) started.");
             }
 
 #if NET40
