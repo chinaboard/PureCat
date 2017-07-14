@@ -58,8 +58,8 @@ namespace PureCat.Message.Spi.IO
 
             for (var i = 0; i < _clientConfig.Domain.ThreadPool; i++)
             {
-#if NET40
                 var tmp = i;
+#if NET40
                 TaskEx.Run(() => AsynchronousSendTask(tmp));
 #else
                 Task.Run(() => AsynchronousSendTask(tmp));
