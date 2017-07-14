@@ -17,7 +17,7 @@
     <AssemblyName>PureCat</AssemblyName>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>1591</NoWarn>
-    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
     <IncludeSymbols>True</IncludeSymbols>
     <Version>0.1.7.0-beta</Version>
     <NetStandardImplicitPackageVersion>1.6.1</NetStandardImplicitPackageVersion>
