@@ -30,7 +30,6 @@ namespace PureCat.Message.Spi.Heartbeat
             Produced = _statistics.Produced;
             Overflowed = _statistics.Overflowed;
             Bytes = _statistics.Bytes;
-            _statistics.Reset();
         }
     }
 }

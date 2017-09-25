@@ -107,7 +107,7 @@ namespace PureCat
         /// 执行事务
         /// </summary>
         /// <param name="customCatch">捕获异常时的处理方法</param>
-        public static T DoTransaction<T>(string type, string name, Func<T> func, Func<Exception, T> customCatch = null)
+        public static T DoTransaction<T>(string type, string name, Func<T> func, Func<Exception, T> customCatch = null, Action finallyAction = null)
         {
             var tran = NewTransaction(type, name);
             try
@@ -129,6 +129,7 @@ namespace PureCat
             }
             finally
             {
+                finallyAction?.Invoke();
                 tran.Complete();
             }
         }
@@ -136,7 +137,7 @@ namespace PureCat
         /// 执行事务
         /// </summary>
         /// <param name="customCatch">捕获异常时的处理方法</param>
-        public static void DoTransaction(string type, string name, Action action, Action<Exception> customCatch = null)
+        public static void DoTransaction(string type, string name, Action action, Action<Exception> customCatch = null, Action finallyAction = null)
         {
             var tran = NewTransaction(type, name);
             try
@@ -158,6 +159,7 @@ namespace PureCat
             }
             finally
             {
+                finallyAction?.Invoke();
                 tran.Complete();
             }
         }
