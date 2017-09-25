@@ -6,7 +6,6 @@ using PureCat.Message.Spi.Internals;
 using PureCat.Util;
 using System;
 using System.IO;
-using System.Threading.Tasks;
 
 namespace PureCat
 {
