@@ -16,17 +16,15 @@ namespace PureCat.Message.Spi.Heartbeat.Extend
             _dict = new Dictionary<string, double>();
             PerformanceCounterCategory category = new PerformanceCounterCategory("Network Interface");
 
-            var interfaces = GetNetworkInterfaces();
             var categoryList = category.GetInstanceNames();
 
             foreach (string name in categoryList)
             {
-                var nicName = name.Replace('[', '(').Replace(']', ')');
-                if (!interfaces.Select(t => t.Description).Contains(nicName) || nicName.ToLower().Contains("loopback"))
+                if (name.ToLower().Contains("loopback"))
                     continue;
                 try
                 {
-                    NetworkAdapter adapter = new NetworkAdapter(interfaces.First(t => t.Description.Contains(nicName)).Name);
+                    NetworkAdapter adapter = new NetworkAdapter(name);
                     adapter.NetworkBytesReceived = new PerformanceCounter("Network Interface", "Bytes Received/sec", name);
                     adapter.NetworkBytesSend = new PerformanceCounter("Network Interface", "Bytes Sent/sec", name);
                     _adappterList.Add(adapter);         // Add it to ArrayList adapter
@@ -52,30 +50,9 @@ namespace PureCat.Message.Spi.Heartbeat.Extend
         {
             _adappterList.ForEach(item =>
             {
-                _dict[item.Name + " Bytes Sent/sec"] = item.NetworkBytesSend.NextValue();
-                _dict[item.Name + " Bytes Received/sec"] = item.NetworkBytesReceived.NextValue();
+                _dict[item.Name + " MBytes Sent/sec"] = item.NetworkBytesSend.NextValue() / 1024 / 1024;               //MB
+                _dict[item.Name + " MBytes Received/sec"] = item.NetworkBytesReceived.NextValue() / 1024 / 1024;       //MB
             });
-        }
-
-        public static List<NetworkInterface> GetNetworkInterfaces()
-        {
-            List<NetworkInterface> list = new List<NetworkInterface>();
-            List<NetworkInterface> Interfaces = new List<NetworkInterface>();
-
-            foreach (var nic in NetworkInterface.GetAllNetworkInterfaces())
-            {
-                if (nic.NetworkInterfaceType == NetworkInterfaceType.Ethernet && nic.OperationalStatus == OperationalStatus.Up)
-                {
-                    Interfaces.Add(nic);
-                }
-            }
-
-            foreach (NetworkInterface nic in Interfaces)
-            {
-                if (nic.GetIPProperties().GetIPv4Properties() != null)
-                    list.Add(nic);
-            }
-            return list;
         }
     }
 
